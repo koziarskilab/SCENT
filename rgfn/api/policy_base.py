@@ -52,7 +52,7 @@ class PolicyBase(Generic[TState, TActionSpace, TAction], ABC, TrainingHooksMixin
             actions: a list of actions chosen in the given states of length `n_states`.
 
         Returns:
-            a tensor of log probabilities of shape `(n_states,)`.
+            a tensor of chosen log probabilities of shape `(n_states,).
         """
         ...
 

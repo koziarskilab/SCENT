@@ -1,0 +1,10 @@
+include 'configs/rgfn_base.gin'
+
+include 'configs/envs/dataset/rgfn.gin'
+include 'configs/proxies/target/qed.gin'
+
+TanimotoSimilarityModes.proxy_term_threshold = 0.8
+TanimotoSimilarityModes.similarity_threshold = 0.5
+TanimotoSimilarityModes.max_modes = 5000
+beta = 64
+ScaffoldCostsList.proxy_value_threshold_list = [0.8]

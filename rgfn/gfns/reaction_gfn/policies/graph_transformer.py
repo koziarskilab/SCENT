@@ -43,7 +43,8 @@ def mpnn_feat(mol, ifcoord=True, panda_fmt=False, one_hot_atom=False, donor_feat
         type_idx = atomtypes.get(atom.GetSymbol(), 5)
         atmfeat[i, type_idx] = 1
         if one_hot_atom:
-            atmfeat[i, ntypes + 9 + atom.GetAtomicNum() - 1] = 1
+            idx = min(ntypes + 9 + atom.GetAtomicNum() - 1, nfeat - 1)
+            atmfeat[i, idx] = 1
         else:
             atmfeat[i, ntypes + 1] = (atom.GetAtomicNum() % 16) / 2.0
         atmfeat[i, ntypes + 4] = atom.GetIsAromatic()

@@ -1,9 +1,12 @@
 from .reaction_metrics import (
     QED,
-    AllMolecules,
+    BackwardDecomposeLogProbs,
+    ForwardLogProbs,
     FractionEarlyTerminate,
+    NewBuildingBlocksUsage,
+    NumReactions,
     NumScaffoldsFound,
+    SaveSynthesisPaths,
     TanimotoSimilarityModes,
-    UniqueMolecules,
 )
 from .standard_gfn_metrics import ProxyCalls, StandardGFNMetrics, TopKProxyMetric

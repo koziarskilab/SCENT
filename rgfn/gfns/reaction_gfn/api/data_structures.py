@@ -1,5 +1,5 @@
 from dataclasses import InitVar, dataclass, field
-from typing import Tuple
+from typing import Any, Dict, Generic, Hashable, Tuple, TypeVar
 
 from rdkit import Chem
 from rdkit.Chem import AllChem, MolFromSmarts
@@ -12,6 +12,7 @@ class Molecule:
     rdkit_mol: Chem.Mol = field(init=False, repr=False, compare=False, hash=False)
     idx: int | None = field(repr=False, compare=False, default=None, hash=False)
     valid: bool = field(init=False, repr=False, compare=False, hash=False)
+    num_reactions: int = field(default=0, compare=False, hash=False)
 
     def __post_init__(self, mol_or_smiles: str | Chem.Mol):
         rdkit_mol = (
@@ -23,10 +24,17 @@ class Molecule:
         else:
             if Chem.SanitizeMol(rdkit_mol, catchErrors=True) == 0:
                 rdkit_mol = Chem.RemoveHs(rdkit_mol)
+                canonical_smiles = Chem.MolToSmiles(rdkit_mol)
                 valid = True
             else:
-                valid = False
-            canonical_smiles = Chem.MolToSmiles(rdkit_mol)
+                canonical_smiles = Chem.MolToSmiles(rdkit_mol)
+                rdkit_mol = Chem.MolFromSmiles(canonical_smiles)
+                if rdkit_mol is not None and Chem.SanitizeMol(rdkit_mol, catchErrors=True) == 0:
+                    rdkit_mol = Chem.RemoveHs(rdkit_mol)
+                    canonical_smiles = Chem.MolToSmiles(rdkit_mol)
+                    valid = True
+                else:
+                    valid = False
 
         object.__setattr__(self, "rdkit_mol", rdkit_mol)
         object.__setattr__(self, "smiles", canonical_smiles)
@@ -127,3 +135,54 @@ class AnchoredReaction(Reaction):
         left, right = self.reaction.split(">>")
         disconnection = f"{right} >> {left}"
         return AnchoredReaction(disconnection, idx=self.idx, anchor_pattern_idx=0)
+
+    def __str__(self):
+        return f"R'({self.reaction}, {self.anchor_pattern_idx}, {self.idx})"
+
+
+TypeIn = TypeVar("TypeIn", bound=Hashable)
+TypeOut = TypeVar("TypeOut", bound=Any)
+
+
+class Cache(Generic[TypeIn, TypeOut]):
+    def __init__(self, max_size: int | None = 10000000):
+        self._cache: Dict[TypeIn, TypeOut] = {}
+        self.max_size = max_size
+        self.real_max_size = float("inf") if self.max_size is None else int(1.05 * self.max_size)
+
+    def __getitem__(self, key: TypeIn) -> TypeOut | None:
+        return self._cache.get(key, None)
+
+    def __contains__(self, item: Any) -> bool:
+        return item in self._cache
+
+    def __setitem__(self, key: TypeIn, value: TypeOut):
+        self._cache[key] = value
+        if len(self._cache) >= self.real_max_size:
+            self._limit_the_size(self._cache)
+
+    def _limit_the_size(self, cache: Dict[TypeIn, TypeOut]):
+        if self.max_size is None or len(cache) <= self.max_size:
+            return
+        cache_oversize = len(cache) - self.max_size
+        keys_to_remove = [key for key, _ in zip(cache.keys(), range(cache_oversize))]
+        for key in keys_to_remove:
+            cache.pop(key)
+
+    def clear(self):
+        self._cache.clear()
+
+    def pop(self, key: TypeIn):
+        self._cache.pop(key, None)
+
+    def __len__(self):
+        return len(self._cache)
+
+    def keys(self):
+        return self._cache.keys()
+
+    def items(self):
+        return self._cache.items()
+
+    def values(self):
+        return self._cache.values()

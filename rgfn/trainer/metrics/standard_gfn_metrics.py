@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Sequence, Set
 
 import gin
 
-from rgfn.api.trajectories import Trajectories
+from rgfn.api.trajectories import TrajectoriesContainer
 from rgfn.shared.proxies.cached_proxy import CachedProxyBase
 from rgfn.trainer.metrics.metric_base import MetricsBase
 from rgfn.utils.helpers import ContentHeap
@@ -14,8 +14,8 @@ class StandardGFNMetrics(MetricsBase):
     A standard set of metrics for GFN. It includes the mean of the reward and the proxy.
     """
 
-    def compute_metrics(self, trajectories: Trajectories) -> Dict[str, float]:
-        reward_outputs = trajectories.get_reward_outputs()
+    def compute_metrics(self, trajectories_container: TrajectoriesContainer) -> Dict[str, float]:
+        reward_outputs = trajectories_container.forward_trajectories.get_reward_outputs()
         output_dict = {
             "reward_mean": reward_outputs.reward.mean().item(),
             "proxy_mean": reward_outputs.proxy.mean().item(),
@@ -53,9 +53,9 @@ class TopKProxyMetric(MetricsBase):
         self.k_list = k_list
         self.include_all_components = include_all_components
 
-    def compute_metrics(self, trajectories: Trajectories) -> Dict[str, float]:
-        proxy_outputs = trajectories.get_reward_outputs()
-        terminal_states = trajectories.get_last_states_flat()
+    def compute_metrics(self, trajectories_container: TrajectoriesContainer) -> Dict[str, float]:
+        proxy_outputs = trajectories_container.forward_trajectories.get_reward_outputs()
+        terminal_states = trajectories_container.forward_trajectories.get_last_states_flat()
         proxy_dict = {"proxy": proxy_outputs.proxy}
         if proxy_outputs.proxy_components is not None and self.include_all_components:
             proxy_dict.update(proxy_outputs.proxy_components)
@@ -77,7 +77,7 @@ class ProxyCalls(MetricsBase):
     def __init__(self, proxy: CachedProxyBase):
         self.proxy = proxy
 
-    def compute_metrics(self, trajectories: Trajectories) -> Dict[str, float]:
+    def compute_metrics(self, trajectories_container: TrajectoriesContainer) -> Dict[str, float]:
         proxy_calls = self.proxy.n_proxy_calls
         return {"proxy_calls": proxy_calls}
 
@@ -102,9 +102,9 @@ class NumModesFound(MetricsBase):
             threshold: set() for threshold in proxy_value_threshold_list
         }
 
-    def compute_metrics(self, trajectories: Trajectories) -> Dict[str, float]:
-        reward_outputs = trajectories.get_reward_outputs()
-        terminal_states = trajectories.get_last_states_flat()
+    def compute_metrics(self, trajectories_container: TrajectoriesContainer) -> Dict[str, float]:
+        reward_outputs = trajectories_container.forward_trajectories.get_reward_outputs()
+        terminal_states = trajectories_container.forward_trajectories.get_last_states_flat()
         for state, proxy_value in zip(terminal_states, reward_outputs.proxy):
             for threshold in self.proxy_value_threshold_list:
                 if (self.proxy_higher_better and proxy_value.item() >= threshold) or (

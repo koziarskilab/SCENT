@@ -27,6 +27,9 @@ class DummyLogger(LoggerBase):
     def log_config(self, config: Dict[str, Any]):
         pass
 
+    def log_hyperparameters(self, hyperparameters: Dict[str, Any]):
+        pass
+
     def close(self):
         pass
 

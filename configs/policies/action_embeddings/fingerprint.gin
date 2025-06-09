@@ -1,7 +1,7 @@
 FragmentFingerprintEmbedding.data_factory = %data_factory
-FragmentFingerprintEmbedding.random_linear_compression = False
+FragmentFingerprintEmbedding.dynamic_library = %dynamic_library
 FragmentFingerprintEmbedding.fingerprint_list = ['maccs']
-FragmentFingerprintEmbedding.one_hot_weight = 1.0
+FragmentFingerprintEmbedding.one_hot_weight = 0.5
 FragmentFingerprintEmbedding.hidden_dim = %hidden_dim
 
 action_embedding_fn/gin.singleton.constructor = @FragmentFingerprintEmbedding

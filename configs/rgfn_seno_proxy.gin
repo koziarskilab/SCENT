@@ -1,6 +1,6 @@
 include 'configs/rgfn_base.gin'
 
-include 'configs/envs/reaction.gin'
+include 'configs/envs/dataset/rgfn.gin'
 include 'configs/proxies/target/seno.gin'
 
 TanimotoSimilarityModes.proxy_term_threshold = 0.8

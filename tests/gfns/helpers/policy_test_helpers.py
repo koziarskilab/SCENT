@@ -115,7 +115,6 @@ def helper__test_forward_policy__returns_sensible_log_probs(
     actions = trajectories.get_actions_flat()
     forward_action_spaces = trajectories.get_forward_action_spaces_flat()
     log_probs = policy.compute_action_log_probs(states, forward_action_spaces, actions)
-
     assert torch.isnan(log_probs).sum() == 0
     assert torch.isinf(log_probs).sum() == 0
 

@@ -1,11 +1,12 @@
 from itertools import compress
-from typing import List
+from typing import Any, Dict, List
 
 import gin
 import numpy as np
 from torch import Tensor
 
 from rgfn.api.policy_base import PolicyBase
+from rgfn.api.trajectories import TrajectoriesContainer
 from rgfn.api.type_variables import TAction, TActionSpace, TState
 
 
@@ -30,11 +31,27 @@ class ExploratoryPolicy(PolicyBase[TState, TActionSpace, TAction]):
         first_policy: PolicyBase[TState, TActionSpace, TAction],
         second_policy: PolicyBase[TState, TActionSpace, TAction],
         first_policy_weight: float,
+        first_policy_dominate_at: float = None,
     ):
         super().__init__()
         self.first_policy = first_policy
         self.second_policy = second_policy
         self.first_policy_weight = first_policy_weight
+        self.first_policy_dominate_at = first_policy_dominate_at
+        self.initial_first_policy_weight = first_policy_weight
+        if first_policy_dominate_at is not None:
+            self.increment = (1.0 - first_policy_weight) / first_policy_dominate_at
+        else:
+            self.increment = 0.0
+
+    def on_end_computing_objective(
+        self,
+        iteration_idx: int,
+        trajectories_container: TrajectoriesContainer,
+        recursive: bool = True,
+    ) -> Dict[str, Any]:
+        self.first_policy_weight = min(1.0, self.first_policy_weight + self.increment)
+        return {}
 
     def sample_actions(
         self, states: List[TState], action_spaces: List[TActionSpace]

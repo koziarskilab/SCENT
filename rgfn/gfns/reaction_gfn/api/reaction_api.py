@@ -3,10 +3,10 @@ from typing import Any, List, Tuple
 
 from rgfn.shared.policies.uniform_policy import IndexedActionSpaceBase
 
-from .data_structures import AnchoredReaction, Molecule, Reaction
+from .data_structures import AnchoredReaction, Molecule
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class ReactionState0:
     def __repr__(self):
         return str(self)
@@ -50,7 +50,7 @@ class ReactionActionSpace0(IndexedActionSpaceBase[ReactionAction0]):
         return f"AS0({possible_actions})"
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class ReactionState0Invalid:
     """
     In our code there are some really rare cases of reactions (reactants, product, template) that cannot be reversed:
@@ -102,7 +102,7 @@ class ReactionActionSpace0Invalid(IndexedActionSpaceBase[ReactionAction0Invalid]
         return "AS0Invalid"
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class ReactionStateA:
     molecule: Molecule
     num_reactions: int
@@ -149,7 +149,7 @@ class ReactionActionSpaceA(IndexedActionSpaceBase[ReactionActionA]):
         return f"ASA({possible_actions})"
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class ReactionStateB:
     molecule: Molecule
     anchored_reaction: AnchoredReaction
@@ -195,7 +195,7 @@ class ReactionActionSpaceB(IndexedActionSpaceBase[ReactionActionB]):
         return f"ASB({self.possible_actions})"
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class ReactionStateC:
     molecule: Molecule
     anchored_reaction: AnchoredReaction
@@ -214,7 +214,7 @@ class ReactionStateC:
 @dataclass(frozen=True)
 class ReactionActionC:
     input_molecule: Molecule
-    input_reaction: Reaction
+    input_reaction: AnchoredReaction
     input_fragments: Tuple[Molecule, ...]
     output_molecule: Molecule
 
@@ -245,7 +245,27 @@ class ReactionActionSpaceC(IndexedActionSpaceBase[ReactionActionC]):
         return f"ASC({self.possible_actions})"
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
+class ReactionActionSpace0orCBackward(IndexedActionSpaceBase[ReactionAction0 | ReactionActionC]):
+    possible_actions: Tuple[ReactionAction0 | ReactionActionC, ...]
+
+    def get_action_at_idx(self, idx: int) -> ReactionAction0 | ReactionActionC:
+        return self.possible_actions[idx]
+
+    def get_idx_of_action(self, action: ReactionAction0 | ReactionActionC) -> int:
+        return list(self.possible_actions).index(action)
+
+    def get_possible_actions_indices(self) -> List[int]:
+        return list(range(len(self.possible_actions)))
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return f"ASCBackward({self.possible_actions})"
+
+
+@dataclass(frozen=True)
 class ReactionStateEarlyTerminal:
     previous_state: Any = field(hash=False, compare=False)
 

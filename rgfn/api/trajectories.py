@@ -1,4 +1,6 @@
 import itertools
+from copy import copy
+from dataclasses import dataclass
 from typing import Any, Generic, List
 
 import torch
@@ -34,6 +36,8 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
         self._forward_log_probs_flat: Tensor | None = None
         self._backward_log_probs_flat: Tensor | None = None
         self._log_flows_flat: Tensor | None = None
+        self._costs: List[float] | None = None
+        self.device = "cpu"
 
     def __len__(self):
         """
@@ -107,6 +111,12 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
             a list of the last states of each trajectory in the batch of length `n_trajectories`.
         """
         return [states[-1] for states in self._states_list]
+
+    def get_all_states_grouped(self) -> List[List[TState]]:
+        return copy(self._states_list)
+
+    def get_all_actions_grouped(self) -> List[List[TAction]]:
+        return copy(self._actions_list)
 
     def get_non_last_states_flat(self) -> List[TState]:
         """
@@ -202,6 +212,29 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
         if self._reward_outputs is None:
             raise ValueError("Trajectories have no rewards")
         return self._reward_outputs
+
+    def set_costs(self, costs: List[float]) -> None:
+        """
+        Set the costs of the trajectories.
+
+        Args:
+            costs: a tensor of length `n_trajectories` containing the costs
+
+        Returns:
+            None
+        """
+        self._costs = costs
+
+    def get_costs(self) -> List[float]:
+        """
+        Return the costs of the trajectories.
+
+        Returns:
+            a tensor of length `n_trajectories` containing the costs
+        """
+        if self._costs is None:
+            raise ValueError("Trajectories have no costs")
+        return self._costs
 
     def set_forward_log_probs_flat(self, forward_log_probs_flat: Tensor) -> None:
         """
@@ -330,22 +363,29 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
         if self._reward_outputs is not None:
             trajectories._reward_outputs = self._reward_outputs.masked_select(mask)
 
-        sizes = torch.tensor([len(actions) for actions in self._actions_list])
-        flat_mask = torch.repeat_interleave(mask, sizes).bool()
+        if self._costs is not None:
+            trajectories._costs = [cost for cost, mask in zip(self._costs, mask) if mask]
 
-        if self._forward_log_probs_flat is not None:
-            flat_mask = flat_mask.to(self._forward_log_probs_flat.device)
-            trajectories._forward_log_probs_flat = torch.masked_select(
-                self._forward_log_probs_flat, flat_mask
+        if (
+            self._forward_log_probs_flat is not None
+            or self._backward_log_probs_flat is not None
+            or self._log_flows_flat is not None
+        ):
+            sizes = torch.tensor(
+                [len(actions) for actions in self._actions_list], device=self.device
             )
-        if self._backward_log_probs_flat is not None:
+            flat_mask = torch.repeat_interleave(mask, sizes).bool()
             flat_mask = flat_mask.to(self._forward_log_probs_flat.device)
-            trajectories._backward_log_probs_flat = torch.masked_select(
-                self._backward_log_probs_flat, flat_mask
-            )
-        if self._log_flows_flat is not None:
-            flat_mask = flat_mask.to(self._forward_log_probs_flat.device)
-            trajectories._log_flows_flat = torch.masked_select(self._log_flows_flat, flat_mask)
+            if self._forward_log_probs_flat is not None:
+                trajectories._forward_log_probs_flat = torch.masked_select(
+                    self._forward_log_probs_flat, flat_mask
+                )
+            if self._backward_log_probs_flat is not None:
+                trajectories._backward_log_probs_flat = torch.masked_select(
+                    self._backward_log_probs_flat, flat_mask
+                )
+            if self._log_flows_flat is not None:
+                trajectories._log_flows_flat = torch.masked_select(self._log_flows_flat, flat_mask)
         return trajectories
 
     @classmethod
@@ -377,6 +417,7 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
         rewards_list = []
         forward_log_probs_list = []
         backward_log_probs_list = []
+        costs_list = []
         for trajectory in trajectories_list:
             if trajectory._reward_outputs is not None:
                 rewards_list.append(trajectory._reward_outputs)
@@ -384,6 +425,8 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
                 forward_log_probs_list.append(trajectory._forward_log_probs_flat)
             if trajectory._backward_log_probs_flat is not None:
                 backward_log_probs_list.append(trajectory._backward_log_probs_flat)
+            if trajectory._costs is not None:
+                costs_list.append(trajectory._costs)
 
         if rewards_list:
             trajectories._reward_outputs = RewardOutput.from_list(rewards_list)
@@ -391,6 +434,8 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
             trajectories._forward_log_probs_flat = torch.cat(forward_log_probs_list)
         if backward_log_probs_list:
             trajectories._backward_log_probs_flat = torch.cat(backward_log_probs_list)
+        if costs_list:
+            trajectories._costs = [cost for costs in costs_list for cost in costs]
         return trajectories
 
     def set_device(self, device: str, recursive: bool = True):
@@ -403,6 +448,7 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
         Returns:
             None
         """
+        self.device = device
         self._forward_log_probs_flat = (
             self._forward_log_probs_flat.to(device)
             if self._forward_log_probs_flat is not None
@@ -449,3 +495,63 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
             )
         else:
             return False
+
+
+@dataclass
+class TrajectoriesContainer(Generic[TState, TActionSpace, TAction]):
+    forward_trajectories: Trajectories[TState, TActionSpace, TAction] | None = None
+    replay_trajectories: Trajectories[TState, TActionSpace, TAction] | None = None
+    backward_trajectories: Trajectories[TState, TActionSpace, TAction] | None = None
+    objective_trajectories: Trajectories[TState, TActionSpace, TAction] | None = None
+
+    def get_all_trajectories(self) -> Trajectories[TState, TActionSpace, TAction]:
+        trajectories_list = [
+            self.forward_trajectories,
+            self.replay_trajectories,
+            self.backward_trajectories,
+        ]
+        trajectories_list = [t for t in trajectories_list if t is not None]
+        return Trajectories.from_trajectories(trajectories_list)
+
+    def get_all_non_forward_trajectories(self) -> Trajectories[TState, TActionSpace, TAction]:
+        trajectories_list = [self.replay_trajectories, self.backward_trajectories]
+        trajectories_list = [t for t in trajectories_list if t is not None]
+        return Trajectories.from_trajectories(trajectories_list)
+
+    def get_all_non_backward_trajectories(self) -> Trajectories[TState, TActionSpace, TAction]:
+        trajectories_list = [self.forward_trajectories, self.replay_trajectories]
+        trajectories_list = [t for t in trajectories_list if t is not None]
+        return Trajectories.from_trajectories(trajectories_list)
+
+    def get_forward_length(self) -> int:
+        return len(self.forward_trajectories) if self.forward_trajectories is not None else 0
+
+    def get_replay_length(self) -> int:
+        return len(self.replay_trajectories) if self.replay_trajectories is not None else 0
+
+    def get_backward_length(self) -> int:
+        return len(self.backward_trajectories) if self.backward_trajectories is not None else 0
+
+    def get_forward_mask_for_all(self) -> Tensor:
+        mask = (
+            [True] * self.get_forward_length()
+            + [False] * self.get_replay_length()
+            + [False] * self.get_backward_length()
+        )
+        return torch.tensor(mask)
+
+    def get_replay_mask_for_all(self) -> Tensor:
+        mask = (
+            [False] * self.get_forward_length()
+            + [True] * self.get_replay_length()
+            + [False] * self.get_backward_length()
+        )
+        return torch.tensor(mask)
+
+    def get_backward_mask_for_all(self) -> Tensor:
+        mask = (
+            [False] * self.get_forward_length()
+            + [False] * self.get_replay_length()
+            + [True] * self.get_backward_length()
+        )
+        return torch.tensor(mask)

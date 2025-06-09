@@ -2,14 +2,17 @@ import gin_config
 import rgfn
 
 user_root_dir = 'experiments'
+include 'configs/envs/rgfn.gin'
 include 'configs/loggers/wandb.gin'
 include 'configs/samplers/random.gin'
 include 'configs/rewards/exponential.gin'
-include 'configs/policies/reaction.gin'
+include 'configs/policies/rgfn_decomposability_guided.gin'
 include 'configs/policies/exploration/uniform.gin'
-include 'configs/policies/action_embeddings/one_hot.gin'
+include 'configs/policies/action_embeddings/fingerprint.gin'
 include 'configs/objectives/trajectory_balance.gin'
 include 'configs/replay_buffers/reward_prioritized.gin'
+include 'configs/envs/dynamic_library/none.gin'
+include 'configs/proxies/path_cost.gin'
 
 run_dir = @run_dir/get_str()
 run_dir/get_str.format = '{}/{}'
@@ -20,33 +23,62 @@ RewardPrioritizedReplayBuffer.temperature = %beta
 TrajectoryBalanceOptimizer.cls_name = 'Adam'
 TrajectoryBalanceOptimizer.lr = 0.001
 TrajectoryBalanceOptimizer.logZ_multiplier = 100.0
+TrajectoryBalanceObjective.trajectory_filter = @RGFNTrajectoryFilter()
 
-train_metrics = [@StandardGFNMetrics(), @NumScaffoldsFound(), @UniqueMolecules(), @AllMolecules(), @FractionEarlyTerminate(), @QED(), @TanimotoSimilarityModes()]
-evaluation_step = 500
-
-NumScaffoldsFound.proxy_value_threshold_list = [5, 6, 7, 8]
+proxy_component_name = None
+train_metrics = [
+    @StandardGFNMetrics(),
+    @NumScaffoldsFound(),
+    @FractionEarlyTerminate(),
+    @QED(),
+    @TanimotoSimilarityModes(),
+    @TrajectoryCost(),
+    @ActionSpaceSize(),
+    @ScaffoldCostsList(),
+    @SaveSynthesisPaths(),
+    @NewBuildingBlocksUsage(),
+    @BackwardDecomposeLogProbs(),
+    @ForwardLogProbs(),
+    @NumReactions()
+]
+TanimotoSimilarityModes.term_name = %proxy_component_name
+NumScaffoldsFound.proxy_component_name = %proxy_component_name
+ScaffoldCostsList.proxy_component_name = %proxy_component_name
+SaveSynthesisPaths.proxy_component_name = %proxy_component_name
+NumScaffoldsFound.proxy_value_threshold_list = [7, 8]
 NumScaffoldsFound.proxy_component_name = None
-UniqueMolecules.dump_every_n = %evaluation_step
-UniqueMolecules.run_dir = %run_dir
-AllMolecules.dump_every_n = %evaluation_step
-AllMolecules.run_dir = %run_dir
 TanimotoSimilarityModes.run_dir = %run_dir
 TanimotoSimilarityModes.proxy = %train_proxy
 TanimotoSimilarityModes.compute_every_n = %evaluation_step
 TanimotoSimilarityModes.similarity_threshold = 0.3
-TanimotoSimilarityModes.max_modes = 1000
+TanimotoSimilarityModes.max_modes = 2000
+ScaffoldCostsList.proxy_value_threshold_list = [8]
+SaveSynthesisPaths.run_dir = %run_dir
+NewBuildingBlocksUsage.threshold = 8.0
+evaluation_step = 500
+
+valid_metrics = [
+    @valid/SaveSynthesisPaths(),
+]
+valid/SaveSynthesisPaths.file_name = 'final_paths.csv'
 
 Trainer.run_dir = %run_dir
 Trainer.train_forward_sampler = %train_forward_sampler
 Trainer.train_replay_buffer = %train_replay_buffer
 Trainer.train_metrics = %train_metrics
+Trainer.valid_metrics = %valid_metrics
+Trainer.valid_every_n_iterations = 100000000
+Trainer.valid_sampler = %valid_sampler
+Trainer.valid_n_trajectories = 1000
+Trainer.valid_batch_size = 64
 Trainer.objective = %objective
 Trainer.optimizer = @TrajectoryBalanceOptimizer()
 Trainer.lr_scheduler = None
-Trainer.n_iterations = 5002
-Trainer.train_forward_n_trajectories = 100
+Trainer.n_iterations = 5001
+Trainer.train_forward_n_trajectories = 64
 Trainer.train_backward_n_trajectories = 0
-Trainer.train_replay_n_trajectories = 20
+Trainer.train_replay_n_trajectories = 32
 Trainer.logger = %logger
 Trainer.device = 'auto'
-Trainer.trajectory_filter = @RGFNTrajectoryFilter()
+Trainer.path_cost_proxy = %path_cost_proxy
+Trainer.dynamic_fragment_library = %dynamic_library

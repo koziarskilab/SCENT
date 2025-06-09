@@ -57,6 +57,20 @@ class ReplayBufferBase(ABC, Generic[TState, TActionSpace, TAction], TrainingHook
         """
         ...
 
+    def sample_trajectories_batch(self, n_total_trajectories: int, batch_size: int) -> Trajectories:
+        """
+        Sample trajectories from the replay buffer.
+        Args:
+            n_total_trajectories: total number of trajectories to sample.
+            batch_size: the size of the batch.
+        Returns:
+            a list of sampled trajectories.
+        """
+        trajectories_list = []
+        for trajectories in self.get_trajectories_iterator(n_total_trajectories, batch_size):
+            trajectories_list.append(trajectories)
+        return Trajectories.from_trajectories(trajectories_list)
+
     @abc.abstractmethod
     def state_dict(self) -> dict:
         """

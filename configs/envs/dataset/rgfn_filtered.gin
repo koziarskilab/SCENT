@@ -1,0 +1,5 @@
+reaction_path = 'data/rgfn_filtered/templates.txt'
+fragment_path = 'data/rgfn_filtered/fragments.txt'
+cost_path = 'data/rgfn_filtered/fragment_to_real_cost.json'
+yield_path = 'data/rgfn_filtered/templates_yields.csv'
+yield_value = None

@@ -27,6 +27,19 @@ class LoggerBase(ABC):
         ...
 
     @abstractmethod
+    def log_hyperparameters(self, hyperparameters: Dict[str, Any]):
+        """
+        Log the hyperparameters.
+
+        Args:
+            hyperparameters: a dictionary containing the hyperparameters.
+
+        Returns:
+            None
+        """
+        ...
+
+    @abstractmethod
     def log_code(self, source_path: str | Path):
         """
         Log the code.

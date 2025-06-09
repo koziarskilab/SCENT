@@ -97,6 +97,7 @@ class FewPhasePolicyBase(
         shared_embeddings = self.get_shared_embeddings(states, action_spaces)
 
         log_probs_list = []
+        entropies_list = []
         log_probs_to_state_idx = []
         for action_space_type, forward_fn in self.action_space_to_forward_fn.items():
             phase_indices = [
@@ -125,7 +126,8 @@ class FewPhasePolicyBase(
             state_to_action_idx[state_idx] = action_idx
         state_to_action_idx = state_to_action_idx.to(self.device)
 
-        return torch.index_select(log_probs, index=state_to_action_idx, dim=0).to(self.device)
+        log_probs = torch.index_select(log_probs, index=state_to_action_idx, dim=0).to(self.device)
+        return log_probs
 
     def _select_actions_log_probs(
         self,
@@ -156,6 +158,23 @@ class FewPhasePolicyBase(
 
         log_probs = torch.log_softmax(logits, dim=1)
         return torch.index_select(log_probs.view(-1), index=action_tensor_indices, dim=0)
+
+    def _forward_deterministic(
+        self,
+        states: List[TState],
+        action_spaces: List[TIndexedActionSpace],
+        shared_embeddings: None,
+    ) -> Tensor:
+        assert len(states) == len(action_spaces)
+        max_action_idx = max(
+            action_space.get_possible_actions_indices()[0] for action_space in action_spaces
+        )
+        logits_list = []
+        for action_space in action_spaces:
+            logits = [-float("inf")] * (max_action_idx + 1)
+            logits[action_space.get_possible_actions_indices()[0]] = 0
+            logits_list.append(logits)
+        return torch.tensor(logits_list).float().to(self.device)
 
     def compute_states_log_flow(self, states: List[THashableState]) -> Tensor:
         raise NotImplementedError()

@@ -1,4 +1,5 @@
 import heapq
+import os
 import random
 from dataclasses import dataclass
 from typing import Any, Dict, Hashable, Iterator, List, Literal, Set
@@ -77,7 +78,14 @@ def seed_everything(seed: int):
     Args:
         seed (int): The desired seed.
     """
+
+    os.environ[
+        "CUBLAS_WORKSPACE_CONFIG"
+    ] = ":4096:8"  # torch_geometric needs it to be deterministic...
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True)

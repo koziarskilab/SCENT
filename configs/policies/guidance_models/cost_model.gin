@@ -1,0 +1,6 @@
+SimpleCostModel.path_cost_proxy = %path_cost_proxy
+SimpleCostModel.max_num_reactions = %max_num_reactions
+SimpleCostModel.use_dataset = 'none'
+
+cost_model/gin.singleton.constructor = @SimpleCostModel
+cost_model = @cost_model/gin.singleton()

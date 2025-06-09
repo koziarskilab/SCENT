@@ -1,6 +1,6 @@
 include 'configs/rgfn_base.gin'
 
-include 'configs/envs/reaction_docking.gin'
+include 'configs/envs/dataset/rgfn_docking.gin'
 include 'configs/proxies/target/clpp_docking.gin'
 
 NumScaffoldsFound.proxy_value_threshold_list = [10, 11, 12, 13]

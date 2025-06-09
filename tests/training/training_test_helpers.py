@@ -9,7 +9,12 @@ from rgfn.utils.helpers import seed_everything
 
 
 def helper__test_training__runs_properly(
-    config_path: str, config_override_str: str, tmp_path: Path, n_iterations: int = 1
+    config_path: str,
+    config_override_str: str,
+    tmp_path: Path,
+    n_iterations: int = 2,
+    forward_n_trajectories: int = 2,
+    replay_n_trajectories: int = 2,
 ):
     """
     A helper function that tests whether the training runs properly. It sets the random seed, changes the working
@@ -32,7 +37,13 @@ def helper__test_training__runs_properly(
     gin.clear_config()
     gin.parse_config_files_and_bindings(
         [config_path, config_override_path],
-        bindings=[f'run_name="test"', "WandbLogger.mode='offline'", f"user_root_dir='{tmp_path}'"],
+        bindings=[
+            f'run_name="test"',
+            "WandbLogger.mode='offline'",
+            f"user_root_dir='{tmp_path}'",
+            f"Trainer.train_forward_n_trajectories={forward_n_trajectories}",
+            f"Trainer.train_replay_n_trajectories={replay_n_trajectories}",
+        ],
     )
     trainer = Trainer(n_iterations=n_iterations)
     trainer.train()

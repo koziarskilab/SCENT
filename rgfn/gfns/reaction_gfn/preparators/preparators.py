@@ -8,7 +8,6 @@ from multiprocessing import Pool
 from typing import List, Optional
 
 import gin
-from openbabel import openbabel as ob
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdDistGeom
 
@@ -108,6 +107,7 @@ class MeekoLigandPreparator(BasePreparator):
 
     def _prepare_ligand(self, smi: str, ligand_path: List[str]) -> bool:
         from meeko import MoleculePreparation, PDBQTWriterLegacy
+        from openbabel import openbabel as ob
 
         for j in range(0, len(ligand_path), self.n_conformers):
             if any(os.path.exists(path) for path in ligand_path[j : j + self.n_conformers]):

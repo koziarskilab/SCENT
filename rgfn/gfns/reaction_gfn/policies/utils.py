@@ -4,6 +4,20 @@ import torch
 from torch_geometric.utils import to_dense_batch
 
 
+class OrderedSet:
+    def __init__(self):
+        self._dict = {}
+
+    def add(self, item):
+        self._dict[item] = None
+
+    def __iter__(self):
+        return iter(self._dict.keys())
+
+    def __len__(self):
+        return len(self._dict)
+
+
 def counts_to_batch_indices(counts: Sequence[int], device: str | torch.device) -> torch.Tensor:
     counts = torch.tensor(counts, device=device) if not isinstance(counts, torch.Tensor) else counts
     indices = torch.arange(len(counts), device=device)

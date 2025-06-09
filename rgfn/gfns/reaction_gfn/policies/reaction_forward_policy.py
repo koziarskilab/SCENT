@@ -9,7 +9,7 @@ from torch import Tensor, nn
 from torch.nn import init
 
 from rgfn.api.training_hooks_mixin import TrainingHooksMixin
-from rgfn.api.trajectories import Trajectories
+from rgfn.api.trajectories import TrajectoriesContainer
 from rgfn.api.type_variables import TState
 from rgfn.gfns.reaction_gfn.api.data_structures import (
     AnchoredReaction,
@@ -38,7 +38,11 @@ from rgfn.gfns.reaction_gfn.policies.graph_transformer import (
     mol2graph,
     mols2batch,
 )
-from rgfn.gfns.reaction_gfn.policies.utils import one_hot, to_dense_embeddings
+from rgfn.gfns.reaction_gfn.policies.utils import (
+    OrderedSet,
+    one_hot,
+    to_dense_embeddings,
+)
 from rgfn.shared.policies.few_phase_policy import FewPhasePolicyBase, TSharedEmbeddings
 from rgfn.shared.policies.uniform_policy import TIndexedActionSpace
 
@@ -76,7 +80,10 @@ class ReactantPositionalEncodingBase(abc.ABC, nn.Module, TrainingHooksMixin):
         return {}
 
     def on_end_sampling(
-        self, iteration_idx: int, trajectories: Trajectories, recursive: bool = True
+        self,
+        iteration_idx: int,
+        trajectories_container: TrajectoriesContainer,
+        recursive: bool = True,
     ) -> Dict[str, Any]:
         self._cache = None
         return {}
@@ -128,7 +135,6 @@ class ReactionForwardPolicy(
         self.reaction_to_idx = {
             reaction: idx for idx, reaction in enumerate(self.anchored_reactions)
         }
-        self.fragments = data_factory.get_fragments()
         self.random_c = random_c
         self.gnn = GraphTransformer(
             x_dim=71,
@@ -336,8 +342,8 @@ class ReactionForwardPolicy(
     def get_shared_embeddings(
         self, states: List[ReactionState], action_spaces: List[ReactionActionSpace]
     ) -> SharedEmbeddings:
-        all_molecules = set()
-        all_molecules_reactions = set()
+        all_molecules = OrderedSet()
+        all_molecules_reactions = OrderedSet()
         for state, action_space in zip(states, action_spaces):
             if isinstance(action_space, ReactionActionSpace0):
                 all_molecules.add(None)

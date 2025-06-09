@@ -2,7 +2,6 @@ import abc
 from typing import List
 
 import gin
-from tdc import Oracle
 
 from rgfn.api.env_base import TState
 from rgfn.gfns.reaction_gfn.api.reaction_api import (
@@ -13,11 +12,13 @@ from rgfn.shared.proxies.cached_proxy import CachedProxyBase
 
 
 @gin.configurable()
-class DRD2Proxy(CachedProxyBase[ReactionState], abc.ABC):
-    def __init__(self):
+class TDCProxy(CachedProxyBase[ReactionState], abc.ABC):
+    def __init__(self, oracle_name: str):
+        from tdc import Oracle
+
         super().__init__()
 
-        self.oracle = Oracle(name="DRD2")
+        self.oracle = Oracle(name=oracle_name)
         self.cache = {ReactionStateEarlyTerminal(None): 0.0}
 
     @property

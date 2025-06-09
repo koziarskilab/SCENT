@@ -1,9 +1,0 @@
-FragmentGNNEmbedding.data_factory = %data_factory
-FragmentGNNEmbedding.gnn_type = 'gat'
-FragmentGNNEmbedding.one_hot_weight = 1.0
-FragmentGNNEmbedding.num_layers = 3
-FragmentGNNEmbedding.linear_embedding = True
-FragmentGNNEmbedding.hidden_dim = %hidden_dim
-
-action_embedding_fn/gin.singleton.constructor = @FragmentGNNEmbedding
-action_embedding_fn = @action_embedding_fn/gin.singleton()

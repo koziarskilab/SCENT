@@ -1,4 +1,5 @@
 FragmentOneHotEmbedding.data_factory = %data_factory
+FragmentOneHotEmbedding.dynamic_library = %dynamic_library
 FragmentOneHotEmbedding.hidden_dim = %hidden_dim
 action_embedding_fn/gin.singleton.constructor = @FragmentOneHotEmbedding
 action_embedding_fn = @action_embedding_fn/gin.singleton()

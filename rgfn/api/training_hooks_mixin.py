@@ -2,7 +2,8 @@ from typing import Any, Dict, List
 
 from torch import nn
 
-from rgfn.api.trajectories import Trajectories
+from rgfn.api.trajectories import TrajectoriesContainer
+from rgfn.gfns.reaction_gfn.api.data_structures import Molecule
 
 
 class TrainingHooksMixin:
@@ -72,14 +73,17 @@ class TrainingHooksMixin:
         return update_outputs
 
     def on_end_sampling(
-        self, iteration_idx: int, trajectories: Trajectories, recursive: bool = True
+        self,
+        iteration_idx: int,
+        trajectories_container: TrajectoriesContainer,
+        recursive: bool = True,
     ) -> Dict[str, Any]:
         """
         Hook called at the end of the sampling phase of the training loop.
 
         Args:
             iteration_idx: The current iteration index.
-            trajectories: The trajectories collected during the sampling phase.
+            trajectories_container: The trajectories collected during the sampling phase.
             recursive: Whether to call the hook on all the recursive hook objects.
         Returns:
             A dictionary containing the metrics returned by the hook. The metrics are aggregated across all the hooks
@@ -89,19 +93,22 @@ class TrainingHooksMixin:
         if recursive:
             for hook_object in self._gather_all_recursive_hook_objects():
                 update_outputs |= hook_object.on_end_sampling(
-                    iteration_idx, trajectories, recursive=False
+                    iteration_idx, trajectories_container, recursive=False
                 )
         return update_outputs
 
     def on_start_computing_objective(
-        self, iteration_idx: int, trajectories: Trajectories, recursive: bool = True
+        self,
+        iteration_idx: int,
+        trajectories_container: TrajectoriesContainer,
+        recursive: bool = True,
     ) -> Dict[str, Any]:
         """
         Hook called at the start of the computing objective phase of the training loop.
 
         Args:
             iteration_idx: The current iteration index.
-            trajectories: The trajectories collected during the sampling phase.
+            trajectories_container: The trajectories collected during the sampling phase.
             recursive: Whether to call the hook on all the recursive hook objects.
         Returns:
             A dictionary containing the metrics returned by the hook. The metrics are aggregated across all the hooks
@@ -111,19 +118,22 @@ class TrainingHooksMixin:
         if recursive:
             for hook_object in self._gather_all_recursive_hook_objects():
                 update_outputs |= hook_object.on_start_computing_objective(
-                    iteration_idx, trajectories, recursive=False
+                    iteration_idx, trajectories_container, recursive=False
                 )
         return update_outputs
 
     def on_end_computing_objective(
-        self, iteration_idx: int, trajectories: Trajectories, recursive: bool = True
+        self,
+        iteration_idx: int,
+        trajectories_container: TrajectoriesContainer,
+        recursive: bool = True,
     ) -> Dict[str, Any]:
         """
         Hook called at the end of the computing objective phase of the training loop.
 
         Args:
             iteration_idx: The current iteration index.
-            trajectories: The trajectories collected during the sampling phase.
+            trajectories_container: The trajectories collected during the sampling phase.
             recursive: Whether to call the hook on all the recursive hook objects.
         Returns:
             A dictionary containing the metrics returned by the hook. The metrics are aggregated across all the hooks
@@ -133,6 +143,31 @@ class TrainingHooksMixin:
         if recursive:
             for hook_object in self._gather_all_recursive_hook_objects():
                 update_outputs |= hook_object.on_end_computing_objective(
-                    iteration_idx, trajectories, recursive=False
+                    iteration_idx, trajectories_container, recursive=False
+                )
+        return update_outputs
+
+    def on_update_fragments_library(
+        self,
+        iteration_idx: int,
+        fragments: List[Molecule],
+        costs: List[float],
+        recursive: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Hook called when the fragments library is updated.
+
+        Args:
+            fragments: The updated fragments library.
+
+        Returns:
+            A dictionary containing the metrics returned by the hook. The metrics are aggregated across all the hooks
+            and logged by the Trainer. The dictionary may be empty.
+        """
+        update_outputs = {}
+        if recursive:
+            for hook_object in self._gather_all_recursive_hook_objects():
+                update_outputs |= hook_object.on_update_fragments_library(
+                    iteration_idx, fragments, costs, recursive=False
                 )
         return update_outputs

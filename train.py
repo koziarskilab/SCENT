@@ -3,7 +3,7 @@ from pathlib import Path
 
 import gin
 
-from gin_config import get_time_stamp
+from gin_config import get_time_stamp, gin_config_to_readable_dictionary
 from rgfn.trainer.trainer import Trainer
 from rgfn.utils.helpers import seed_everything
 
@@ -25,5 +25,8 @@ if __name__ == "__main__":
     trainer.logger.log_code("rgfn")
     trainer.logger.log_to_file(gin.operative_config_str(), "operative_config")
     trainer.logger.log_to_file(gin.config_str(), "config")
+    trainer.logger.log_hyperparameters(
+        gin_config_to_readable_dictionary(gin.config._OPERATIVE_CONFIG)
+    )
     trainer.train()
     trainer.close()

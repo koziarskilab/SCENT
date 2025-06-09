@@ -6,7 +6,7 @@ import torch
 from torch import Tensor, nn
 from torch.nn import Parameter
 
-from rgfn.api.trajectories import Trajectories
+from rgfn.api.trajectories import TrajectoriesContainer
 from rgfn.api.type_variables import TAction, TState
 from rgfn.gfns.reaction_gfn.api.data_structures import Molecule, Reaction
 from rgfn.gfns.reaction_gfn.api.reaction_api import (
@@ -34,7 +34,11 @@ from rgfn.gfns.reaction_gfn.policies.graph_transformer import (
     mol2graph,
     mols2batch,
 )
-from rgfn.gfns.reaction_gfn.policies.utils import one_hot, to_dense_embeddings
+from rgfn.gfns.reaction_gfn.policies.utils import (
+    OrderedSet,
+    one_hot,
+    to_dense_embeddings,
+)
 from rgfn.shared.policies.few_phase_policy import FewPhasePolicyBase, TSharedEmbeddings
 from rgfn.shared.policies.uniform_policy import TIndexedActionSpace
 
@@ -330,8 +334,8 @@ class RNDNoveltyForwardPolicy(
     def get_shared_embeddings(
         self, states: List[ReactionState], action_spaces: List[ReactionActionSpace]
     ) -> SharedEmbeddings:
-        all_molecules = set()
-        all_molecules_reactions = set()
+        all_molecules = OrderedSet()
+        all_molecules_reactions = OrderedSet()
         for state, action_space in zip(states, action_spaces):
             if isinstance(action_space, ReactionActionSpace0):
                 all_molecules.add(None)
@@ -381,9 +385,13 @@ class RNDNoveltyForwardPolicy(
         )
 
     def on_end_computing_objective(
-        self, iteration_idx: int, trajectories: Trajectories, recursive: bool = True
+        self,
+        iteration_idx: int,
+        trajectories_container: TrajectoriesContainer,
+        recursive: bool = True,
     ) -> Dict[str, float]:
         self.optimizer.zero_grad()
+        trajectories = trajectories_container.forward_trajectories
         states = trajectories.get_non_last_states_flat()
         action_spaces = trajectories.get_forward_action_spaces_flat()
         actions = trajectories.get_actions_flat()
@@ -398,7 +406,7 @@ class RNDNoveltyForwardPolicy(
         # This part can be optimized: we don't need to compute novelty for the entire action spaces, but only
         # for the actions that were actually taken.
 
-        return self.compute_action_log_probs(states, action_spaces, actions)
+        return self.compute_action_log_probs(states, action_spaces, actions)[0]
 
     def _select_actions_log_probs(
         self,
@@ -428,4 +436,5 @@ class RNDNoveltyForwardPolicy(
             idx * max_num_actions + action_idx for idx, action_idx in enumerate(action_indices)
         ]
         action_tensor_indices = torch.tensor(action_indices).long().to(self.device)
-        return torch.index_select(logits.view(-1), index=action_tensor_indices, dim=0)
+        logits = torch.index_select(logits.view(-1), index=action_tensor_indices, dim=0)
+        return logits

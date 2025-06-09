@@ -2,16 +2,9 @@ import abc
 import math
 from typing import Any, Dict, List
 
-import dgl
 import gin
 import numpy as np
 import torch
-from dgllife.model import GAT, GCN
-from dgllife.utils import (
-    CanonicalAtomFeaturizer,
-    CanonicalBondFeaturizer,
-    SMILESToBigraph,
-)
 from rdkit import DataStructs
 from rdkit.Chem import MACCSkeys
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
@@ -19,8 +12,12 @@ from torch import Tensor, nn
 from torch.nn import init
 
 from rgfn.api.training_hooks_mixin import TrainingHooksMixin
-from rgfn.api.trajectories import Trajectories
+from rgfn.api.trajectories import TrajectoriesContainer
+from rgfn.gfns.reaction_gfn.api.data_structures import Molecule
 from rgfn.gfns.reaction_gfn.api.reaction_data_factory import ReactionDataFactory
+from rgfn.gfns.reaction_gfn.dynamic_library.reaction_dynamic_library import (
+    DynamicLibrary,
+)
 
 
 class ActionEmbeddingBase(abc.ABC, nn.Module, TrainingHooksMixin):
@@ -29,6 +26,7 @@ class ActionEmbeddingBase(abc.ABC, nn.Module, TrainingHooksMixin):
         self.hidden_dim = hidden_dim
         self.data_factory = data_factory
         self._cache: Tensor | None = None
+        self.device = "cpu"
 
     def get_embeddings(self) -> Tensor:
         if self._cache is None:
@@ -39,11 +37,14 @@ class ActionEmbeddingBase(abc.ABC, nn.Module, TrainingHooksMixin):
         self._cache = None
 
     def on_start_sampling(self, iteration_idx: int, recursive: bool = True) -> Dict[str, Any]:
-        self._cache = None
+        self._cache = self._get_embeddings()
         return {}
 
     def on_end_sampling(
-        self, iteration_idx: int, trajectories: Trajectories, recursive: bool = True
+        self,
+        iteration_idx: int,
+        trajectories_container: TrajectoriesContainer,
+        recursive: bool = True,
     ) -> Dict[str, Any]:
         self._cache = None
         return {}
@@ -52,18 +53,10 @@ class ActionEmbeddingBase(abc.ABC, nn.Module, TrainingHooksMixin):
     def _get_embeddings(self) -> Tensor:
         pass
 
-
-@gin.configurable()
-class FragmentOneHotEmbedding(ActionEmbeddingBase):
-    def __init__(self, data_factory: ReactionDataFactory, hidden_dim: int = 64):
-        super().__init__(data_factory, hidden_dim)
-        self.weights = nn.Parameter(
-            torch.empty(len(data_factory.get_fragments()), hidden_dim), requires_grad=True
-        )
-        init.kaiming_uniform_(self.weights, a=math.sqrt(5))
-
-    def _get_embeddings(self) -> Tensor:
-        return self.weights
+    def set_device(self, device: str, recursive: bool = True):
+        if self._cache is not None:
+            self._cache = self._cache.to(device)
+        super().set_device(device, recursive=recursive)
 
 
 @gin.configurable()
@@ -81,32 +74,58 @@ class ReactionsOneHotEmbedding(ActionEmbeddingBase):
 
 
 @gin.configurable()
+class FragmentOneHotEmbedding(ActionEmbeddingBase):
+    def __init__(
+        self,
+        data_factory: ReactionDataFactory,
+        hidden_dim: int = 64,
+        dynamic_library: DynamicLibrary | None = None,
+    ):
+        super().__init__(data_factory, hidden_dim)
+        self.initial_fragments = len(data_factory.get_fragments())
+        self.current_fragments = self.initial_fragments
+
+        max_n_fragments = self.initial_fragments
+        if dynamic_library is not None:
+            max_n_fragments += dynamic_library.max_num_additional_fragments
+        self.weights = nn.Parameter(torch.empty(max_n_fragments, hidden_dim), requires_grad=True)
+        init.kaiming_uniform_(self.weights, a=math.sqrt(5))
+
+    def _get_embeddings(self) -> Tensor:
+        return self.weights[: self.current_fragments]
+
+    def on_update_fragments_library(
+        self,
+        iteration_idx: int,
+        fragments: List[Molecule],
+        costs: List[float],
+        recursive: bool = True,
+    ) -> Dict[str, Any]:
+        self.clear_cache()
+        self.current_fragments = self.initial_fragments + len(fragments)
+        return {}
+
+
+@gin.configurable()
 class FragmentFingerprintEmbedding(ActionEmbeddingBase):
     def __init__(
         self,
         data_factory: ReactionDataFactory,
         fingerprint_list: List[str],
-        random_linear_compression: bool,
         hidden_dim: int = 64,
-        one_hot_weight: float = 1.0,
+        one_hot_weight: float = 0.5,
         linear_embedding: bool = True,
+        dynamic_library: DynamicLibrary | None = None,
     ):
         super().__init__(data_factory, hidden_dim)
+        self.n_initial_fragments = len(data_factory.get_fragments())
         self.fingerprint_list = fingerprint_list
-
         self.one_hot_weight = one_hot_weight
-        self.one_hot = nn.Parameter(
-            torch.empty(len(self.fragments), hidden_dim), requires_grad=True
-        )
-        init.kaiming_uniform_(self.one_hot, a=math.sqrt(5))
 
-        self.all_fingerprints = self._get_fingerprints()
-        if random_linear_compression:
-            random_projection = torch.empty(self.all_fingerprints.shape[-1], hidden_dim)
-            init.kaiming_uniform_(random_projection, a=math.sqrt(5))
-            self.all_fingerprints = torch.matmul(
-                self.all_fingerprints, random_projection
-            )  # (num_fragments, hidden_dim)
+        self.one_hot_embeddings = FragmentOneHotEmbedding(
+            data_factory, hidden_dim, dynamic_library=dynamic_library
+        )
+        self.all_fingerprints = self._get_fingerprints(data_factory.get_fragments())
         if linear_embedding:
             self.fp_embedding = nn.Linear(self.all_fingerprints.shape[-1], hidden_dim)
         else:
@@ -116,9 +135,27 @@ class FragmentFingerprintEmbedding(ActionEmbeddingBase):
                 nn.Linear(hidden_dim, hidden_dim),
             )
 
-    def _get_fingerprints(self) -> Tensor:
+    def on_update_fragments_library(
+        self,
+        iteration_idx: int,
+        fragments: List[Molecule],
+        costs: List[float],
+        recursive: bool = True,
+    ) -> Dict[str, Any]:
+        self.clear_cache()
+        self.one_hot_embeddings.on_update_fragments_library(
+            iteration_idx, fragments, costs, recursive=recursive
+        )
+        n_new_fragments = self.n_initial_fragments + len(fragments) - len(self.all_fingerprints)
+        fragments_to_add = fragments[-n_new_fragments:]
+        if len(fragments_to_add) > 0:
+            new_fingerprints = self._get_fingerprints(fragments_to_add).to(self.device)
+            self.all_fingerprints = torch.cat([self.all_fingerprints, new_fingerprints], dim=0)
+        return {}
+
+    def _get_fingerprints(self, fragments: List[Molecule]) -> Tensor:
         fps_list = []
-        for molecule in self.fragments:
+        for molecule in fragments:
             mol = molecule.rdkit_mol
             for fp_type in self.fingerprint_list:
                 fps = []
@@ -135,93 +172,16 @@ class FragmentFingerprintEmbedding(ActionEmbeddingBase):
             fps = np.concatenate(fps, axis=0)
             fps_list.append(fps)
         fps_numpy = np.stack(fps_list, axis=0)
-        # remove zero columns
-        fps_numpy = fps_numpy[:, np.any(fps_numpy, axis=0)]
         return torch.tensor(fps_numpy).float()
 
     def _get_embeddings(self) -> Tensor:
         fingerprints = self.fp_embedding(self.all_fingerprints)
         if self.one_hot_weight > 0:
-            return fingerprints + self.one_hot_weight * self.one_hot
+            return (
+                1 - self.one_hot_weight
+            ) * fingerprints + self.one_hot_weight * self.one_hot_embeddings.get_embeddings()
         return fingerprints
 
     def set_device(self, device: str, recursive: bool = True):
         self.all_fingerprints = self.all_fingerprints.to(device)
-        self.super().set_device(device, recursive=recursive)
-
-
-@gin.configurable()
-class FragmentGNNEmbedding(ActionEmbeddingBase):
-    def __init__(
-        self,
-        data_factory: ReactionDataFactory,
-        hidden_dim: int,
-        gnn_type: str,
-        num_layers: int,
-        linear_embedding: bool,
-        one_hot_weight: float = 1.0,
-    ):
-        super().__init__(data_factory, hidden_dim)
-        self.node_featurizer = CanonicalAtomFeaturizer()
-        self.edge_featurizer = CanonicalBondFeaturizer(self_loop=True)
-        self.smiles_to_graph = SMILESToBigraph(
-            node_featurizer=self.node_featurizer,
-            edge_featurizer=self.edge_featurizer,
-            add_self_loop=True,
-        )
-        self.gnn_type = gnn_type
-        if gnn_type == "gat":
-            self.gnn = GAT(
-                in_feats=self.node_featurizer.feat_size(),
-                hidden_feats=[hidden_dim] * num_layers,
-            )
-        elif gnn_type == "gcn":
-            self.gnn = GCN(
-                in_feats=self.node_featurizer.feat_size(),
-                hidden_feats=[hidden_dim] * num_layers,
-            )
-        if linear_embedding:
-            self.final_embedding = nn.Linear(hidden_dim, hidden_dim)
-        else:
-            self.final_embedding = nn.Sequential(
-                nn.Linear(hidden_dim, hidden_dim),
-                nn.GELU(),
-                nn.Linear(hidden_dim, hidden_dim),
-            )
-
-        self.one_hot_weight = one_hot_weight
-        self.one_hot = nn.Parameter(
-            torch.empty(len(self.fragments), hidden_dim), requires_grad=True
-        )
-        init.kaiming_uniform_(self.one_hot, a=math.sqrt(5))
-
-        self.batch = self._get_graph_batch()
-
-    def _get_graph_batch(self) -> dgl.DGLGraph:
-        graphs = []
-        for molecule in self.fragments:
-            graph = self.smiles_to_graph(molecule.smiles)
-            graphs.append(graph)
-        return dgl.batch(graphs)
-
-    def _get_embeddings(self) -> Tensor:
-        node_embeddings = self.gnn(self.batch, self.batch.ndata["h"])
-        graph_embeddings = torch.zeros(
-            size=(len(self.fragments), self.hidden_dim),
-            dtype=torch.float32,
-            device=node_embeddings.device,
-        )
-        num_nodes = self.batch.batch_num_nodes()
-        indices = torch.arange(len(num_nodes), device=num_nodes.device)
-        index = torch.repeat_interleave(indices, num_nodes).long()
-        graph_embeddings = torch.index_add(
-            input=graph_embeddings, index=index, dim=0, source=node_embeddings
-        )
-        graph_embeddings = self.final_embedding(graph_embeddings)
-        if self.one_hot_weight > 0:
-            return graph_embeddings + self.one_hot_weight * self.one_hot
-        return graph_embeddings
-
-    def set_device(self, device: str, recursive: bool = True):
-        self.batch = self.batch.to(device)
-        self.super().set_device(device, recursive=recursive)
+        super().set_device(device, recursive=recursive)

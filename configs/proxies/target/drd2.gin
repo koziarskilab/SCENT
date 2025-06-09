@@ -1,3 +1,4 @@
-proxy/gin.singleton.constructor = @DRD2Proxy
+proxy/gin.singleton.constructor = @TDCProxy
+TDCProxy.oracle_name = 'DRD2'
 train_proxy = @proxy/gin.singleton()
 valid_proxy = %train_proxy

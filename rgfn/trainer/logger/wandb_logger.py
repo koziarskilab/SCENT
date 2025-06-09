@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import gin
+import gin.config
 import wandb
 
 from .logger_base import LoggerBase
@@ -21,7 +22,11 @@ class WandbLogger(LoggerBase):
     """
 
     def __init__(
-        self, logdir: str | Path, project_name: str, experiment_name: str, **kwargs: Dict[str, Any]
+        self,
+        logdir: str | Path,
+        project_name: str,
+        experiment_name: str,
+        **kwargs: Dict[str, Any],
     ):
         super().__init__(logdir)
         self.project_name = project_name
@@ -43,6 +48,25 @@ class WandbLogger(LoggerBase):
     def log_metrics(self, metrics: Dict[str, Any], prefix: str):
         metrics = {f"{prefix}/{k}": v for k, v in metrics.items()}
         self.run.log(metrics)
+
+    def log_hyperparameters(self, hyperparameters: Dict[str, Any]):
+        # For now, only log the hyperparameters that are not gin references
+        _hyperparams = {}
+        for k, v in hyperparameters.items():
+
+            def contains_configurable_reference(value):
+                if isinstance(value, gin.config.ConfigurableReference):
+                    return True
+                elif isinstance(value, dict):
+                    return any(contains_configurable_reference(v) for v in value.values())
+                elif isinstance(value, list):
+                    return any(contains_configurable_reference(v) for v in value)
+                return False
+
+            if not contains_configurable_reference(v):
+                _hyperparams[k] = v
+
+        self.run.config.update(_hyperparams, allow_val_change=True)
 
     def log_code(self, source_path: str | Path):
         self.run.log_code(root=str(source_path))

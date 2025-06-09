@@ -49,7 +49,12 @@ def test__rnd_novelty_policy__updates_properly(
     novelty_scores_old = policy.compute_state_action_novelty(states, action_spaces, actions)
 
     for i in range(3):
-        policy.on_end_computing_objective(iteration_idx=i, trajectories=trajectories)
+        from rgfn.api.trajectories import TrajectoriesContainer
+
+        policy.on_end_computing_objective(
+            iteration_idx=i,
+            trajectories_container=TrajectoriesContainer(forward_trajectories=trajectories),
+        )
 
     novelty_scores_new = policy.compute_state_action_novelty(states, action_spaces, actions)
     assert torch.all(novelty_scores_old >= novelty_scores_new)

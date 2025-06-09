@@ -7,13 +7,15 @@ from torch import Tensor, nn
 from torch.nn import Parameter
 
 from rgfn.api.type_variables import TState
+from rgfn.gfns.reaction_gfn.api.data_structures import Reaction
 from rgfn.gfns.reaction_gfn.api.reaction_api import (
     Molecule,
-    Reaction,
     ReactionAction,
+    ReactionActionC,
     ReactionActionSpace,
     ReactionActionSpace0,
     ReactionActionSpace0Invalid,
+    ReactionActionSpace0orCBackward,
     ReactionActionSpaceA,
     ReactionActionSpaceB,
     ReactionActionSpaceC,
@@ -30,7 +32,11 @@ from rgfn.gfns.reaction_gfn.policies.graph_transformer import (
 from rgfn.gfns.reaction_gfn.policies.reaction_forward_policy import (
     ReactionForwardPolicy,
 )
-from rgfn.gfns.reaction_gfn.policies.utils import one_hot, to_dense_embeddings
+from rgfn.gfns.reaction_gfn.policies.utils import (
+    OrderedSet,
+    one_hot,
+    to_dense_embeddings,
+)
 from rgfn.shared.policies.few_phase_policy import FewPhasePolicyBase, TSharedEmbeddings
 from rgfn.shared.policies.uniform_policy import TIndexedActionSpace
 
@@ -59,7 +65,6 @@ class ReactionBackwardPolicy(
         self.reaction_to_idx = {
             reaction: idx for idx, reaction in enumerate(self.anchored_reactions)
         }
-        self.fragments = data_factory.get_fragments()
         self.use_backbone = backbone_policy is not None
         self.gnn = (
             GraphTransformer(
@@ -88,7 +93,7 @@ class ReactionBackwardPolicy(
             ReactionActionSpace0Invalid: self._forward_deterministic,
             ReactionActionSpaceA: self._forward_deterministic,
             ReactionActionSpaceB: self._forward_deterministic,
-            ReactionActionSpaceC: self._forward_c,
+            ReactionActionSpace0orCBackward: self._forward_c,
             ReactionActionSpaceEarlyTerminate: self._forward_deterministic,
         }
 
@@ -109,12 +114,18 @@ class ReactionBackwardPolicy(
     ) -> Tensor:
         embedding_indices_list = []
         for action_space in action_spaces:
-            embedding_indices = [
-                shared_embeddings.molecule_and_reaction_to_idx[
-                    (action.input_molecule, action.input_reaction)
-                ]
-                for action in action_space.possible_actions
-            ]
+            embedding_indices = []
+            for action in action_space.possible_actions:
+                if isinstance(action, ReactionActionC):
+                    embedding_indices.append(
+                        shared_embeddings.molecule_and_reaction_to_idx[
+                            (action.input_molecule, action.input_reaction)
+                        ]
+                    )
+                else:
+                    embedding_indices.append(
+                        shared_embeddings.molecule_and_reaction_to_idx[(action.fragment, None)]
+                    )
             embedding_indices_list.append(embedding_indices)
         embedding_indices_flat = [idx for indices in embedding_indices_list for idx in indices]
         embedding_indices = torch.tensor(embedding_indices_flat).long().to(self.device)
@@ -125,6 +136,7 @@ class ReactionBackwardPolicy(
         logits, _ = to_dense_embeddings(
             logits, [len(indices) for indices in embedding_indices_list], fill_value=float("-inf")
         )
+
         return logits
 
     def _forward_deterministic(
@@ -147,11 +159,14 @@ class ReactionBackwardPolicy(
     def get_shared_embeddings(
         self, states: List[ReactionState], action_spaces: List[ReactionActionSpace]
     ) -> SharedEmbeddings:
-        all_molecules_reactions = set()
+        all_molecules_reactions = OrderedSet()
         for state, action_space in zip(states, action_spaces):
-            if isinstance(action_space, ReactionActionSpaceC):
+            if isinstance(action_space, ReactionActionSpace0orCBackward):
                 for action in action_space.possible_actions:
-                    all_molecules_reactions.add((action.input_molecule, action.input_reaction))
+                    if isinstance(action, ReactionActionC):
+                        all_molecules_reactions.add((action.input_molecule, action.input_reaction))
+                    else:
+                        all_molecules_reactions.add((action.fragment, None))
 
         molecule_and_reaction_to_idx = {
             molecule_reaction: idx for idx, molecule_reaction in enumerate(all_molecules_reactions)
@@ -162,6 +177,8 @@ class ReactionBackwardPolicy(
         ]
         reaction_cond = [
             one_hot(r.idx, len(self.anchored_reactions))
+            if r is not None
+            else one_hot(-1, len(self.anchored_reactions))
             for _, r in molecule_and_reaction_to_idx.keys()
         ]
 

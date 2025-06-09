@@ -1,0 +1,4 @@
+PathCostProxy.yield_value = %yield_value
+PathCostProxy.data_factory = %data_factory
+path_cost_proxy/gin.singleton.constructor = @PathCostProxy
+path_cost_proxy = @path_cost_proxy/gin.singleton()

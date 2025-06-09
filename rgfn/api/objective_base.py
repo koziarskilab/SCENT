@@ -7,7 +7,7 @@ from torch.nn import Parameter
 
 from rgfn.api.policy_base import PolicyBase
 from rgfn.api.training_hooks_mixin import TrainingHooksMixin
-from rgfn.api.trajectories import Trajectories
+from rgfn.api.trajectories import Trajectories, TrajectoriesContainer
 from rgfn.api.type_variables import TAction, TActionSpace, TState
 
 
@@ -57,13 +57,13 @@ class ObjectiveBase(nn.Module, ABC, Generic[TState, TActionSpace, TAction], Trai
 
     @abstractmethod
     def compute_objective_output(
-        self, trajectories: Trajectories[TState, TActionSpace, TAction]
+        self, trajectories_container: TrajectoriesContainer[TState, TActionSpace, TAction]
     ) -> ObjectiveOutput:
         """
         Compute the objective output on a batch of trajectories.
 
         Args:
-            trajectories: the batch of trajectories obtained in the sampling process. It contains the states, actions,
+            trajectories_container: the batch of trajectories obtained in the sampling process. It contains the states, actions,
                 action spaces in forward and backward directions, and rewards. Other important quantities (e.g. log
                 probabilities of taking actions in forward and backward directions) should be assigned in this method
                 using appropriate methods (e.g. assign_log_probs).
