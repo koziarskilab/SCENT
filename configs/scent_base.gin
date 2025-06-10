@@ -1,0 +1,13 @@
+include 'configs/rgfn_base.gin'
+
+# Will be overridden by 'configs/policies/scent_cost_guided.gin' in the next line:
+include 'configs/policies/scent_decomposability_guided.gin'
+
+# Comment out to disable Synthesis Cost Guidance:
+include 'configs/policies/scent_cost_guided.gin'
+
+# Comment out to disable Exploitation Penalty:
+include 'configs/policies/exploration/exploitation_penalty.gin'
+
+# Comment out to disable Dynamic Library:
+include 'configs/envs/dynamic_library/dynamic_library.gin'

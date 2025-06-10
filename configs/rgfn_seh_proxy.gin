@@ -1,6 +1,6 @@
 include 'configs/rgfn_base.gin'
 
-include 'configs/envs/dataset/rgfn.gin'
+include 'configs/envs/settings/small.gin'
 include 'configs/proxies/target/seh.gin'
 
 TanimotoSimilarityModes.proxy_term_threshold = 8.0

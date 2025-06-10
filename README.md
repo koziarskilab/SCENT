@@ -1,9 +1,21 @@
-# RGFN: Reaction-GFlowNet
+# SCENT: Cost-efficient RGFN
 
-Code for "RGFN: Synthesizable Molecular Generation Using GFlowNets" [[arXiv]](https://arxiv.org/abs/2406.08506).
-Repository based on [RetroGFN](https://github.com/gmum/RetroGFN).
+Code for "Scalable and Cost-Efficient de Novo Template-Based  Molecular Generation" [[arXiv]](TODO).
+Repository based on [RGFN](https://github.com/koziarskilab/RGFN) and [RetroGFN](https://github.com/gmum/RetroGFN).
 
-RGFN is a generative model for designing diverse, high-reward small molecules. All produced molecules are highly likely to be synthesizable through the proposed synthesis pathways and cost ~100x less than those produced by competing methods. This is achieved by operating exclusively in the space of high-yield chemical reactions and low-cost reactants.
+SCENT is a follow-up of RGFN paper [[arxiv]](https://arxiv.org/abs/2406.08506) extending RGFN with the following components:
+- **Recursive Cost Guidance** for the backward policy, which utilizes a machine
+learning model to approximate the recursive cost of backward transitions. From this, we derive
+two targeted strategies: **Synthesis Cost Guidance**, which reduces synthesis cost and improves
+diversity in large building block settings; and **Decomposability Guidance**, which enforces the
+validity of backward transitions by discouraging transitions through indecomposable molecules.
+- **Exploitation Penalty**, a simple yet effective regularizer that promotes exploration by penalizing
+repeated state-action pairs.
+- **Dynamic Library** mechanism that augments the initial set of building blocks with
+high-reward intermediates discovered during optimization. This mechanism enables full-tree
+synthesis and increases mode coverage in both low- and high-resource scenarios.
+
+SCENT finds much more high-rewarded modes than RGFN, while being drastically faster (**Decomposability Guidance** replaces expensive recursive decomposability checks).
 
 ![Graphical abstract](graphical_abstract.png)
 
@@ -88,13 +100,13 @@ Finally, note that GNEprop requires a system-wide installation of CUDA to work o
 
 ## Train
 
-To train the RGFN using sEH proxy, run:
+To train the SCENT using sEH proxy, run:
 
 ```sh
-python train.py --cfg configs/rgfn_seh_proxy.gin
+python train.py --cfg configs/scent_seh_proxy.gin
 ```
 
-The script will dump the results under `experiments/rgfn_seh_proxy/<timestamp>` directory. Our code uses gin-config
+The script will dump the results under `experiments/scent_seh_proxy/<timestamp>` directory. Our code uses gin-config
 package that allows for lightweight models configuration along with dependency injection.
 
 <details><summary><h3 style="display:inline-block">Project Structure</h3></summary>
@@ -142,12 +154,5 @@ Under `rgfn.gfns`, the repository provides the implementation of the GFlowNets.
 ## Citation
 
 ```text
-@article{koziarski2024rgfn,
-  title={{RGFN}: Synthesizable molecular generation using {GFlowNets}},
-  author={Koziarski, Micha{\l} and Rekesh, Andrei and Shevchuk, Dmytro and van der Sloot, Almer and Gai{\'n}ski, Piotr and Bengio, Yoshua and Liu, Chenghao and Tyers, Mike and Batey, Robert},
-  journal={Advances in Neural Information Processing Systems},
-  volume={37},
-  pages={46908--46955},
-  year={2024}
-}
+TODO
 ```

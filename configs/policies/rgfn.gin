@@ -1,0 +1,8 @@
+include 'configs/policies/forward_base.gin'
+
+ReactionBackwardPolicy.hidden_dim = %hidden_dim
+ReactionBackwardPolicy.data_factory = %data_factory
+backward_policy/gin.singleton.constructor = @ReactionBackwardPolicy
+backward_policy = @backward_policy/gin.singleton()
+
+train_backward_policy = %backward_policy

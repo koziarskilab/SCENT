@@ -1,5 +1,0 @@
-reaction_path = 'data/synflow/templates.txt'
-fragment_path = 'data/synflow/fragment_64k.txt'
-cost_path = 'data/synflow/fragment_64k_to_real_cost.json'
-yield_path = None
-yield_value = 0.75

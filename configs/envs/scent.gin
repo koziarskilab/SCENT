@@ -1,0 +1,3 @@
+include "configs/envs/rgfn.gin"
+
+ReactionEnv.use_recurrence = False

@@ -1,0 +1,9 @@
+include 'configs/policies/forward_base.gin'
+include 'configs/policies/guidance_models/decomposability_model.gin'
+
+DecomposabilityGuidedBackwardPolicy.path_cost_proxy = %path_cost_proxy
+DecomposabilityGuidedBackwardPolicy.decomposable_prediction_model = %decomposable_model
+
+backward_policy/gin.singleton.constructor = @DecomposabilityGuidedBackwardPolicy
+backward_policy = @backward_policy/gin.singleton()
+train_backward_policy = %backward_policy

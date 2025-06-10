@@ -1,0 +1,6 @@
+hidden_dim = 64
+ReactionForwardPolicy.hidden_dim = %hidden_dim
+ReactionForwardPolicy.data_factory = %data_factory
+ReactionForwardPolicy.action_embedding_fn = %action_embedding_fn
+forward_policy/gin.singleton.constructor = @ReactionForwardPolicy
+forward_policy = @forward_policy/gin.singleton()

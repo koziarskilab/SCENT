@@ -13,8 +13,8 @@ ignore_missing_imports = true
 [tool.poetry]
 name = "rgfn"
 version = "0.0.1"
-description = "RGFN: Synthesizable Molecular Generation Using GFlowNets"
-authors = ["Michał Koziarski", "Andrei Rekesh", "Dmytro Shevchuk", "Almer van der Sloot", "Piotr Gaiński", "Yoshua Bengio", "Cheng-Hao Liu", "Mike Tyers", "Robert A. Batey"]
+description = "Scalable and Cost-Efficient de Novo Template-Based Molecular Generation"
+authors = ["Piotr Gaiński", "Oussama Boussif", "Andrei Rekesh", "Dmytro Shevchuk", "Ali Parviz", "Mike Tyers", "Robert A. Batey", "Michał Koziarski"]
 
 [tool.poetry.dependencies]
 torch-geometric = '2.5.3'
