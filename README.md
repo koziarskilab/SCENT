@@ -1,4 +1,4 @@
-# SCENT: Cost-efficient RGFN
+# SCENT: Scalable and Cost-Efficient de Novo Template-Based Molecular Generation
 
 Code for "Scalable and Cost-Efficient de Novo Template-Based  Molecular Generation" [[arXiv]](TODO).
 Repository based on [RGFN](https://github.com/koziarskilab/RGFN) and [RetroGFN](https://github.com/gmum/RetroGFN).
@@ -6,16 +6,16 @@ Repository based on [RGFN](https://github.com/koziarskilab/RGFN) and [RetroGFN](
 SCENT is a follow-up of RGFN paper [[arxiv]](https://arxiv.org/abs/2406.08506) extending RGFN with the following components:
 - **Recursive Cost Guidance** for the backward policy, which utilizes a machine
 learning model to approximate the recursive cost of backward transitions. From this, we derive
-two targeted strategies: **Synthesis Cost Guidance**, which reduces synthesis cost and improves
-diversity in large building block settings; and **Decomposability Guidance**, which enforces the
-validity of backward transitions by discouraging transitions through indecomposable molecules.
+two targeted strategies: 
+  - **Synthesis Cost Guidance**, which reduces synthesis cost and improves diversity in large building block settings; and 
+  - **Decomposability Guidance**, which enforces the validity of backward transitions by discouraging transitions through indecomposable molecules.
 - **Exploitation Penalty**, a simple yet effective regularizer that promotes exploration by penalizing
 repeated state-action pairs.
 - **Dynamic Library** mechanism that augments the initial set of building blocks with
 high-reward intermediates discovered during optimization. This mechanism enables full-tree
 synthesis and increases mode coverage in both low- and high-resource scenarios.
 
-SCENT finds much more high-rewarded modes than RGFN, while being drastically faster (**Decomposability Guidance** replaces expensive recursive decomposability checks).
+SCENT finds much more high-rewarded modes than RGFN, while being drastically faster (since **Decomposability Guidance** replaces expensive recursive decomposability checks).
 
 ![Graphical abstract](graphical_abstract.png)
 
@@ -39,7 +39,7 @@ pip install dgl==1.1.2 -f https://data.dgl.ai/wheels/torch-2.3/cpu/repo.html
 
 pip install -e .
 
-# maybe needed for some systems
+# might be needed for some systems
 conda install conda-forge::xorg-libxrender
 
 # Optional development tools:
@@ -154,5 +154,10 @@ Under `rgfn.gfns`, the repository provides the implementation of the GFlowNets.
 ## Citation
 
 ```text
-TODO
+@inproceedings{gainski2025scalable,
+  title={Scalable and cost-efficient de novo template-based molecular generation},
+  author={Gai{\'n}ski, Piotr and Boussif, Oussama and Shevchuk, Dmytro and Rekesh, Andrei and Parviz, Ali and Tyers, Mike and Batey, Robert A and Koziarski, Micha{\l}},
+  booktitle={ICLR 2025 Workshop on Generative and Experimental Perspectives for Biomolecular Design},
+  year={2025}
+}
 ```
