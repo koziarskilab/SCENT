@@ -1,6 +1,6 @@
-reaction_path = 'data/synflow/templates.txt'
-fragment_path = 'data/synflow/fragment_128k.txt'
-cost_path = 'data/synflow/fragment_128k_to_real_cost.json'
+reaction_path = 'data/enamine/templates.txt'
+fragment_path = 'data/enamine/large/fragments.txt'
+cost_path = 'data/enamine/large/fragments_to_real_cost.json'
 yield_path = None
 yield_value = 0.75
 Trainer.n_iterations = 4001

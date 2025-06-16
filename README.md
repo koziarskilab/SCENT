@@ -6,8 +6,8 @@ Repository based on [RGFN](https://github.com/koziarskilab/RGFN) and [RetroGFN](
 SCENT is a follow-up of RGFN paper [[arxiv]](https://arxiv.org/abs/2406.08506) extending RGFN with the following components:
 - **Recursive Cost Guidance** for the backward policy, which utilizes a machine
 learning model to approximate the recursive cost of backward transitions. From this, we derive
-two targeted strategies: 
-  - **Synthesis Cost Guidance**, which reduces synthesis cost and improves diversity in large building block settings; and 
+two targeted strategies:
+  - **Synthesis Cost Guidance**, which reduces synthesis cost and improves diversity in large building block settings; and
   - **Decomposability Guidance**, which enforces the validity of backward transitions by discouraging transitions through indecomposable molecules.
 - **Exploitation Penalty**, a simple yet effective regularizer that promotes exploration by penalizing
 repeated state-action pairs.
@@ -108,6 +108,11 @@ python train.py --cfg configs/scent_seh_proxy.gin
 
 The script will dump the results under `experiments/scent_seh_proxy/<timestamp>` directory. Our code uses gin-config
 package that allows for lightweight models configuration along with dependency injection.
+
+## Building Blocks Library
+
+Configuration files for the SMALL, MEDIUM, and LARGE settings are available in `configs/envs/settings`. The building block superset used in the MEDIUM and LARGE settings can be requested from [Enamine](https://enamine.net/building-blocks/building-blocks-catalog). The `small_extended.gin` configuration file defines the SMALL setting with additional support for 3- and 4-ary reaction templates.
+
 
 <details><summary><h3 style="display:inline-block">Project Structure</h3></summary>
 

@@ -1,5 +1,5 @@
-reaction_path = 'data/synflow/templates.txt'
-fragment_path = 'data/synflow/fragment_64k.txt'
-cost_path = 'data/synflow/fragment_64k_to_real_cost.json'
+reaction_path = 'data/enamine/templates.txt'
+fragment_path = 'data/enamine/medium/fragments.txt'
+cost_path = 'data/enamine/medium/fragments_to_real_cost.json'
 yield_path = None
 yield_value = 0.75

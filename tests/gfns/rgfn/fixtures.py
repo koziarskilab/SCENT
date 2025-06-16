@@ -26,12 +26,12 @@ from rgfn.gfns.reaction_gfn.proxies.path_cost_proxy import PathCostProxy
 
 @pytest.fixture(scope="module")
 def reaction_path() -> Path:
-    return Path(__file__).parent / "../../../data/rgfn/templates.txt"
+    return Path(__file__).parent / "../../../data/small/templates.txt"
 
 
 @pytest.fixture(scope="module")
 def fragment_path() -> Path:
-    return Path(__file__).parent / "../../../data/rgfn/fragments.txt"
+    return Path(__file__).parent / "../../../data/small/fragments.txt"
 
 
 @pytest.fixture(scope="module")

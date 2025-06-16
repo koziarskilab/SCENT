@@ -1,5 +1,5 @@
-reaction_path = 'data/rgfn/templates.txt'
-fragment_path = 'data/rgfn/fragments.txt'
-cost_path = 'data/rgfn/fragment_to_real_cost.json'
-yield_path = None
-yield_value = 0.75
+reaction_path = 'data/small/templates.txt'
+fragment_path = 'data/small/fragments.txt'
+cost_path = 'data/small/fragment_to_real_cost.json'
+yield_path = 'data/small/templates_yields.csv'
+yield_value = None
