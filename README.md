@@ -3,7 +3,7 @@
 Code for "Scalable and Cost-Efficient de Novo Template-Based  Molecular Generation" [[arXiv]](TODO).
 Repository based on [RGFN](https://github.com/koziarskilab/RGFN) and [RetroGFN](https://github.com/gmum/RetroGFN).
 
-SCENT is a follow-up of RGFN paper [[arxiv]](https://arxiv.org/abs/2406.08506) extending RGFN with the following components:
+SCENT is a follow-up of the RGFN paper [[arxiv]](https://arxiv.org/abs/2406.08506) extending RGFN with the following components:
 - **Recursive Cost Guidance** for the backward policy, which utilizes a machine
 learning model to approximate the recursive cost of backward transitions. From this, we derive
 two targeted strategies:
@@ -112,8 +112,6 @@ package that allows for lightweight models configuration along with dependency i
 ## Building Blocks Library
 
 Configuration files for the SMALL, MEDIUM, and LARGE settings are available in `configs/envs/settings`. The building block superset used in the MEDIUM and LARGE settings can be requested from [Enamine](https://enamine.net/building-blocks/building-blocks-catalog). The `small_extended.gin` configuration file defines the SMALL setting with additional support for 3- and 4-ary reaction templates.
-
-
 <details><summary><h3 style="display:inline-block">Project Structure</h3></summary>
 
 ### API
