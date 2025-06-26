@@ -39,7 +39,7 @@ pip install dgl==1.1.2 -f https://data.dgl.ai/wheels/torch-2.3/cpu/repo.html
 
 pip install -e .
 
-# might be needed for some systems
+# Might be needed for some systems:
 conda install conda-forge::xorg-libxrender
 
 # Optional development tools:
