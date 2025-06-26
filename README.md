@@ -1,9 +1,9 @@
 # SCENT: Scalable and Cost-Efficient de Novo Template-Based Molecular Generation
 
-Code for "Scalable and Cost-Efficient de Novo Template-Based  Molecular Generation" [[arXiv]](TODO).
+Code for "Scalable and Cost-Efficient de Novo Template-Based  Molecular Generation" [[arXiv]](https://arxiv.org/abs/2506.19865).
 Repository based on [RGFN](https://github.com/koziarskilab/RGFN) and [RetroGFN](https://github.com/gmum/RetroGFN).
 
-SCENT is a follow-up of the RGFN paper [[arxiv]](https://arxiv.org/abs/2406.08506) extending RGFN with the following components:
+SCENT is a follow-up of the RGFN paper [[arXiv]](https://arxiv.org/abs/2406.08506) extending RGFN with the following components:
 - **Recursive Cost Guidance** for the backward policy, which utilizes a machine
 learning model to approximate the recursive cost of backward transitions. From this, we derive
 two targeted strategies:
@@ -15,7 +15,7 @@ repeated state-action pairs.
 high-reward intermediates discovered during optimization. This mechanism enables full-tree
 synthesis and increases mode coverage in both low- and high-resource scenarios.
 
-SCENT finds much more high-rewarded modes than RGFN, while being drastically faster (since **Decomposability Guidance** replaces expensive recursive decomposability checks).
+SCENT finds many more high-reward modes than RGFN, while being drastically faster (since **Decomposability Guidance** replaces expensive recursive decomposability checks).
 
 ![Graphical abstract](graphical_abstract.png)
 
