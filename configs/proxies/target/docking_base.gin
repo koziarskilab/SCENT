@@ -1,7 +1,7 @@
 proxy/gin.singleton.constructor = @DockingMoleculeProxy
 train_proxy = @proxy/gin.singleton()
 valid_proxy = %train_proxy
-DockingMoleculeProxy.qv_dir = 'quickvina_dir'
+DockingMoleculeProxy.qv_dir = 'Vina-GPU-2.1'
 DockingMoleculeProxy.vina_mode = 'QuickVina2'
 DockingMoleculeProxy.preparator_class = @MeekoLigandPreparator
 DockingMoleculeProxy.print_msgs = False

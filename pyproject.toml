@@ -17,6 +17,7 @@ description = "Scalable and Cost-Efficient de Novo Template-Based Molecular Gene
 authors = ["Piotr Gaiński", "Oussama Boussif", "Andrei Rekesh", "Dmytro Shevchuk", "Ali Parviz", "Mike Tyers", "Robert A. Batey", "Michał Koziarski"]
 
 [tool.poetry.dependencies]
+python = '>=3.9, <3.12'
 torch-geometric = '2.5.3'
 torchmetrics = '1.2.0'
 dgllife = '0.3.2'
@@ -39,4 +40,5 @@ openbabel-wheel = '3.1.1.19'
 meeko = '0.5.1'
 wurlitzer = '3.1.0'
 xlsxwriter = '3.2.0'
-PyTDC = '1.0.6'
+gin-config = '0.5.0'
+#PyTDC = '1.0.6'
