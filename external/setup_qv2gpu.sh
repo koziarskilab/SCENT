@@ -14,17 +14,17 @@ cd "$WORKSPACE"
 
 # Install boost 1.83 from source
 BOOST_VER=1_83_0
-#wget https://archives.boost.io/release/1.83.0/source/boost_$BOOST_VER.tar.gz
-#tar -zxvf boost_${BOOST_VER}.tar.gz
-#cd boost_${BOOST_VER}
-#./bootstrap.sh --prefix=$WORKSPACE/boost
-#./b2 install
+wget https://archives.boost.io/release/1.83.0/source/boost_$BOOST_VER.tar.gz
+tar -zxvf boost_${BOOST_VER}.tar.gz
+cd boost_${BOOST_VER}
+./bootstrap.sh --prefix=$WORKSPACE/boost
+./b2 install
 
 # Append /boost/lib to LD_LIBRARY_PATH
-#echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$WORKSPACE/boost/lib/" >> ~/.bashrc
+echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$WORKSPACE/boost/lib/" >> ~/.bashrc
 
 # Install QuickVina2-GPU-2.1
-#cd ..
+cd ..
 git clone https://github.com/DeltaGroupNJUPT/Vina-GPU-2.1.git
 
 # Compile all 3 versions and modify each Makefile to reflect the correct paths
