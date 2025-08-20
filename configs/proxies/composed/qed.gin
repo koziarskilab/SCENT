@@ -1,0 +1,23 @@
+target_proxy = @proxy/gin.singleton()
+
+# QED Proxy
+qed_proxy/gin.singleton.constructor = @QEDProxy
+qed_proxy = @qed_proxy/gin.singleton()
+
+# Composed Proxy
+target_weight = 1.0
+qed_weight = 0.5
+ComposedProxy.weight_dict = {
+    'target': %target_weight,
+    'qed': %qed_weight,
+}
+ComposedProxy.proxies_dict = {
+    'target': %target_proxy,
+    'qed': %qed_proxy
+}
+ComposedProxy.aggregation = 'prod'
+train_proxy/gin.singleton.constructor = @ComposedProxy
+train_proxy = @train_proxy/gin.singleton()
+
+# Use `target` as the proxy component name
+proxy_component_name = 'target'

@@ -112,7 +112,25 @@ package that allows for lightweight models configuration along with dependency i
 ## Building Blocks Library
 
 Configuration files for the SMALL, MEDIUM, and LARGE settings are available in `configs/envs/settings`. The building block superset used in the MEDIUM and LARGE settings can be requested from [Enamine](https://enamine.net/building-blocks/building-blocks-catalog). The `small_extended.gin` configuration file defines the SMALL setting with additional support for 3- and 4-ary reaction templates.
-<details><summary><h3 style="display:inline-block">Project Structure</h3></summary>
+
+## Custom Building Blocks / Templates Library
+To use a custom building blocks / reaction templates library, you can create a new configuration file in `configs/envs/settings` and specify the paths. If you don't have costs estimates and yields, you can set the appropriate paths to `None` (we also recommend disabling the Synthesis Cost Guidance in that case):
+```bash
+cost_path = None
+yield_path = None
+yield_value = None
+include 'configs/policies/scent_decomposability_guided.gin' # to disable Synthesis Cost Guidance
+```
+
+## Composed Proxy
+The repository provides a `ComposedProxy` class that allows you to aggregate multiple proxies into a single proxy. An example configuration of `ComposedProxy` can be found in `configs/proxies/composed/qed.gin`. A configuration that combines sEH and QED looks like:
+```bash
+include 'configs/scent_seh_proxy.gin'
+include 'configs/proxies/composed/qed.gin'
+```
+The resulting proxy is defined: $proxy(x) = seh(x) * qed(x)^{0.5}$.
+
+<details><summary><h1 style="display:inline-block">Project Structure</h1></summary>
 
 ### API
 
