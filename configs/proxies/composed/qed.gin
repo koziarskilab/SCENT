@@ -21,3 +21,4 @@ train_proxy = @train_proxy/gin.singleton()
 
 # Use `target` as the proxy component name
 proxy_component_name = 'target'
+proxy_component_name_list = ['target', 'qed']

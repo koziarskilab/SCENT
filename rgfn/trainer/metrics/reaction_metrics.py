@@ -340,30 +340,34 @@ class NumScaffoldsFound(MetricsBase):
 @gin.configurable()
 class SaveSynthesisPaths(MetricsBase):
     def __init__(
-        self, run_dir: str, proxy_component_name: str | None, file_name: str = "paths.csv"
+        self, run_dir: str, proxy_component_name_list: List[str], file_name: str = "paths.csv"
     ):
         super().__init__()
         self.path = Path(run_dir) / file_name
+        print("Saving synthesis paths to ", self.path)
         self.unique_molecules = set()
+        self.proxy_component_name_list = proxy_component_name_list
         with open(self.path, "w") as f:
-            f.write("iteration,path,proxy\n")
+            if len(proxy_component_name_list) == 0:
+                f.write("iteration,path,molecule,proxy\n")
+            else:
+                components_str = ",".join(proxy_component_name_list)
+                f.write(f"iteration,path,molecule,proxy,{components_str}\n")
         self.to_be_added: List[Tuple[int, List, float]] = []
         self.trajectories_counter = 0
         self.iterations_counter = 0
-        self.proxy_component_name = proxy_component_name
 
     def compute_metrics(self, trajectories_container: TrajectoriesContainer) -> Dict[str, float]:
         trajectories = trajectories_container.forward_trajectories
         reward_outputs = trajectories.get_reward_outputs()
-        values = (
-            reward_outputs.proxy
-            if self.proxy_component_name is None
-            else reward_outputs.proxy_components[self.proxy_component_name]
-        )
+        proxy = reward_outputs.proxy
+        components_dict = {
+            k: reward_outputs.proxy_components[k] for k in self.proxy_component_name_list
+        }
         states_grouped = trajectories.get_all_states_grouped()
         actions_grouped = trajectories.get_all_actions_grouped()
         to_be_added = []
-        for i, (states, actions, score) in enumerate(zip(states_grouped, actions_grouped, values)):
+        for i, (states, actions, score) in enumerate(zip(states_grouped, actions_grouped, proxy)):
             current_trajectory = [actions[0].fragment.smiles]
             for action, state in zip(actions[1:], states[2:]):
                 if isinstance(action, ReactionActionC):
@@ -379,14 +383,37 @@ class SaveSynthesisPaths(MetricsBase):
 
             if isinstance(states[-1], ReactionStateTerminal):
                 self.unique_molecules.add(states[-1].molecule.smiles)
+                molecule = states[-1].molecule.smiles
                 score = score.item()
+                components = [v[i].item() for v in components_dict.values()]
             else:
                 score = 0.0
-            to_be_added.append((self.trajectories_counter + i, current_trajectory, score))
+                molecule = None
+                components = [0.0 for _ in components_dict]
+            if len(self.proxy_component_name_list) == 0:
+                to_be_added.append(
+                    (self.trajectories_counter + i, current_trajectory, molecule, score)
+                )
+            else:
+                to_be_added.append(
+                    (
+                        self.trajectories_counter + i,
+                        current_trajectory,
+                        molecule,
+                        score,
+                        *components,
+                    )
+                )
 
         with open(self.path, "a") as f:
-            for iteration, path, score in to_be_added:
-                f.write(f'{iteration},"{path}",{score}\n')
+            if len(self.proxy_component_name_list) == 0:
+                for iteration, path, molecule, score in to_be_added:
+                    f.write(f'{iteration},"{path}","{molecule}",{score}\n')
+            else:
+                for iteration, path, molecule, score, *components in to_be_added:
+                    f.write(
+                        f'{iteration},"{path}","{molecule}",{score},{",".join(str(c) for c in components)}\n'
+                    )
 
         self.trajectories_counter += len(trajectories)
         return {
