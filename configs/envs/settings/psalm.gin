@@ -1,0 +1,8 @@
+reaction_path = 'data/psalm_new/templates.txt'
+last_step_reaction_path = 'data/psalm_new/templates_lsd.txt'
+fragment_path = 'data/psalm_new/fragments.txt'
+# last_step_fragment_path = 'data/psalm_new/fragments_lsd.txt'
+last_step_fragment_path = 'data/synflow/fragment_8k.txt'
+cost_path = None
+yield_path = None
+yield_value = 0.75

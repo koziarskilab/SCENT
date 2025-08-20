@@ -97,6 +97,16 @@ class ObjectiveBase(nn.Module, ABC, Generic[TState, TActionSpace, TAction], Trai
             states=backward_states, action_spaces=backward_action_spaces, actions=actions
         )  # [n_actions]
 
+        for action, forward_action_space in zip(actions, forward_action_spaces):
+            assert forward_action_space.is_action_allowed(
+                action
+            ), f"Chose an action {action} that is not allowed in the forward action space {forward_action_space}"
+
+        for action, backward_action_space in zip(actions, backward_action_spaces):
+            assert backward_action_space.is_action_allowed(
+                action
+            ), f"Chose an action {action} that is not allowed in the backward action space {backward_action_space}"
+
         trajectories.set_forward_log_probs_flat(forward_log_prob)
         trajectories.set_backward_log_probs_flat(backward_log_prob)
 

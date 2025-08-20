@@ -1,12 +1,16 @@
 ReactionDataFactory.reaction_path = %reaction_path
+ReactionDataFactory.last_step_reaction_path = %last_step_reaction_path
 ReactionDataFactory.fragment_path = %fragment_path
+ReactionDataFactory.last_step_fragment_path = %last_step_fragment_path
 ReactionDataFactory.cost_path = %cost_path
 ReactionDataFactory.yield_path = %yield_path
 data_factory/gin.singleton.constructor = @ReactionDataFactory
 data_factory = @data_factory/gin.singleton()
 
 max_num_reactions = 4
+min_num_reactions = 4
 ReactionEnv.max_num_reactions = %max_num_reactions
+ReactionEnv.min_num_reactions = %min_num_reactions
 ReactionEnv.data_factory = %data_factory
 
 env/gin.singleton.constructor = @ReactionEnv

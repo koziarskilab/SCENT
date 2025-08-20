@@ -224,6 +224,9 @@ class ReactionForwardPolicy(
             self.b_action_embedding_fn.get_embeddings()
         )  # (num_fragments, hidden_dim)
         logits = embeddings @ all_action_embeddings.T  # (1, num_fragments)
+        last_non_div_idx = action_spaces[0].all_actions[-1].idx
+        batch_indices = torch.arange(logits.shape[1]).long().to(self.device)
+        logits[:, batch_indices > last_non_div_idx] = float("-inf")
         return logits.repeat(len(states), 1)
 
     def _forward_a(
