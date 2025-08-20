@@ -130,7 +130,7 @@ include 'configs/proxies/composed/qed.gin'
 ```
 The resulting proxy is defined: $proxy(x) = seh(x) * qed(x)^{0.5}$.
 
-<details><summary><h1 style="display:inline-block">Project Structure</h1></summary>
+<details><summary><h2 style="display:inline-block">Project Structure</h2></summary>
 
 ### API
 
