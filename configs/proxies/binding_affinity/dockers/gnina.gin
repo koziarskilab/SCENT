@@ -1,0 +1,7 @@
+GninaDocker.scoring = "CNNaffinity" # "CNNscore" or "CNNaffinity"
+GninaDocker.num_modes = 5
+GninaDocker.seed = 42
+GninaDocker.n_workers = 4
+
+bap_proxy/gin.singleton.constructor = @GninaDocker
+bap_proxy = @bap_proxy/gin.singleton()

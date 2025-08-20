@@ -1,0 +1,12 @@
+include 'configs/scent_base.gin'
+
+include 'configs/envs/settings/psalm.gin'
+include 'configs/proxies/target/qed.gin'
+
+TanimotoSimilarityModes.proxy_term_threshold = 0.9
+TanimotoSimilarityModes.similarity_threshold = 0.5
+TanimotoSimilarityModes.max_modes = 5000
+beta = 64
+ScaffoldCostsList.proxy_value_threshold_list = [8]
+
+WandbLogger.mode = 'disabled'

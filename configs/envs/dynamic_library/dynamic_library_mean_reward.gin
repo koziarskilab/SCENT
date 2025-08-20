@@ -1,0 +1,11 @@
+DynamicLibrary.data_factory = %data_factory
+DynamicLibrary.path_cost_proxy = %path_cost_proxy
+DynamicLibrary.criterion = "mean_reward"
+dynamic_library/gin.singleton.constructor = @DynamicLibrary
+dynamic_library = @dynamic_library/gin.singleton()
+
+DynamicLibrary.n_new_fragments = 400
+DynamicLibrary.every_n_iterations = 1000
+DynamicLibrary.num_additions = 10
+DynamicLibrary.max_num_reactions = 2
+DynamicLibrary.similarity_threshold = 1.0

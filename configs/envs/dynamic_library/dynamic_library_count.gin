@@ -1,0 +1,5 @@
+DynamicLibrary.data_factory = %data_factory
+DynamicLibrary.path_cost_proxy = %path_cost_proxy
+DynamicLibrary.criterion = "count"
+dynamic_library/gin.singleton.constructor = @DynamicLibrary
+dynamic_library = @dynamic_library/gin.singleton()

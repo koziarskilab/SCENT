@@ -1,0 +1,5 @@
+include 'configs/proxies/binding_affinity/proxy_base.gin'
+
+include 'configs/proxies/binding_affinity/preparators/none.gin'
+include 'configs/proxies/binding_affinity/dockers/none.gin'
+include 'configs/proxies/binding_affinity/scorers/random.gin'

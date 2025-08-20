@@ -70,13 +70,22 @@ class ComposedProxy(CachedProxyBase[THashableState]):
         for proxy_name, proxy in self.proxies_dict.items():
             proxy_values_dict[proxy_name] = proxy.compute_proxy_output(states).value
 
-        values_tensor = torch.stack(
-            [
-                proxy_values_dict[proxy_name] * weight
-                for proxy_name, weight in self.weight_dict.items()
-            ],
-            dim=-1,
-        )
+        if self.aggregation == "prod":
+            values_tensor = torch.stack(
+                [
+                    proxy_values_dict[proxy_name] ** weight
+                    for proxy_name, weight in self.weight_dict.items()
+                ],
+                dim=-1,
+            )
+        else:
+            values_tensor = torch.stack(
+                [
+                    proxy_values_dict[proxy_name] * weight
+                    for proxy_name, weight in self.weight_dict.items()
+                ],
+                dim=-1,
+            )
         if self.aggregation in ["sum", "weighted_mean"]:
             values = values_tensor.sum(dim=-1)
         elif self.aggregation == "min":

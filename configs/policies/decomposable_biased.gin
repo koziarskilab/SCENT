@@ -1,0 +1,11 @@
+include 'configs/policies/reaction.gin'
+include 'configs/policies/bias_models/binary_decomposable_model.gin'
+
+ReactionEnv.use_recurrence = False
+
+DecomposableBiasedBackwardPolicy.path_cost_proxy = %path_cost_proxy
+DecomposableBiasedBackwardPolicy.decomposable_prediction_model = %decomposable_model
+
+backward_policy/gin.singleton.constructor = @DecomposableBiasedBackwardPolicy
+backward_policy = @backward_policy/gin.singleton()
+train_backward_policy = %backward_policy

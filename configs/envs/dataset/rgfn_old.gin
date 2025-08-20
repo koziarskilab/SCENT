@@ -1,0 +1,5 @@
+chemistry_path = 'data/rgfn_old/chemistry.xlsx'
+fragment_path = None
+cost_path = 'data/rgfn_old/fragment_to_real_cost.json'
+yield_path = None
+yield_value = None

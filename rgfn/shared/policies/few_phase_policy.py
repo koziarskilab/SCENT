@@ -68,6 +68,36 @@ class FewPhasePolicyBase(
 
         return [actions[state_to_action_idx[state_idx]] for state_idx in range(len(states))]
 
+    def _get_action_logits(
+        self, states: List[THashableState], action_spaces: List[TIndexedActionSpace]
+    ) -> List[Tensor]:
+        shared_embeddings = self.get_shared_embeddings(states, action_spaces)
+
+        all_logits = []
+        logits_to_state_idx = []
+        for action_space_type, forward_fn in self.action_space_to_forward_fn.items():
+            phase_indices = [
+                idx
+                for idx, action_space in enumerate(action_spaces)
+                if isinstance(action_space, action_space_type)
+            ]
+            if len(phase_indices) == 0:
+                continue
+            phase_states = [states[idx] for idx in phase_indices]
+            phase_action_spaces = [action_spaces[idx] for idx in phase_indices]
+            logits = forward_fn(phase_states, phase_action_spaces, shared_embeddings)
+
+            for row in logits:
+                all_logits.append(row)
+            logits_to_state_idx.extend(phase_indices)
+
+        assert len(all_logits) == len(logits_to_state_idx)
+        state_to_logits_idx = [0] * len(states)
+        for logits_idx, state_idx in enumerate(logits_to_state_idx):
+            state_to_logits_idx[state_idx] = logits_idx
+
+        return [all_logits[state_to_logits_idx[state_idx]] for state_idx in range(len(states))]
+
     def _sample_actions_from_logits(
         self, logits: Tensor, action_spaces: List[TIndexedActionSpace]
     ) -> List[TAction]:
@@ -83,6 +113,7 @@ class FewPhasePolicyBase(
         """
         probs = torch.softmax(logits, dim=1)
         action_indices = Categorical(probs=probs).sample()
+
         return [
             action_space.get_action_at_idx(idx.item())
             for action_space, idx in zip(action_spaces, action_indices)
@@ -97,7 +128,6 @@ class FewPhasePolicyBase(
         shared_embeddings = self.get_shared_embeddings(states, action_spaces)
 
         log_probs_list = []
-        entropies_list = []
         log_probs_to_state_idx = []
         for action_space_type, forward_fn in self.action_space_to_forward_fn.items():
             phase_indices = [

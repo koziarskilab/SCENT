@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import gin
 
@@ -28,6 +28,9 @@ class DummyLogger(LoggerBase):
         pass
 
     def log_hyperparameters(self, hyperparameters: Dict[str, Any]):
+        pass
+
+    def log_files(self, file_paths: List[Path | str]):
         pass
 
     def close(self):

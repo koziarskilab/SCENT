@@ -1,10 +1,19 @@
 include 'configs/scent_base.gin'
 
-include 'configs/envs/settings/small.gin'
+include 'configs/envs/settings/psalm.gin'
 include 'configs/proxies/target/qed.gin'
+
+# include 'configs/proxies/target/seno.gin'
+# include 'configs/proxies/composed/qed.gin'
 
 TanimotoSimilarityModes.proxy_term_threshold = 0.8
 TanimotoSimilarityModes.similarity_threshold = 0.5
 TanimotoSimilarityModes.max_modes = 5000
-beta = 64
 ScaffoldCostsList.proxy_value_threshold_list = [0.8]
+
+max_num_reactions = 2
+min_num_reactions = 2
+
+beta = 64   # Adjust as needed
+
+WandbLogger.mode = 'disabled'

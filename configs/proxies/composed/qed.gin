@@ -1,0 +1,25 @@
+QEDProxy.use_server = False
+prior/gin.singleton.constructor = @QEDProxy
+
+proxy = @proxy/gin.singleton()
+prior = @prior/gin.singleton()
+
+target_weight = 1.0
+prior_weight = 1.0  # Adjust as needed
+
+ComposedProxy.weight_dict = {
+    'target': %target_weight,
+    'prior': %prior_weight,
+}
+ComposedProxy.proxies_dict = {
+    'target': %proxy,
+    'prior': %prior
+}
+ComposedProxy.aggregation = 'prod'
+
+NumScaffoldsFound.proxy_component_name = 'target'
+TanimotoSimilarityModes.term_name = 'target'
+SaveSynthesisPaths.proxy_component_names = ['target', 'prior']
+
+train_proxy/gin.singleton.constructor = @ComposedProxy
+train_proxy = @train_proxy/gin.singleton()

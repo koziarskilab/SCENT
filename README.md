@@ -1,19 +1,20 @@
 # SCENT: Scalable and Cost-Efficient de Novo Template-Based Molecular Generation
 
-Code for "Scalable and Cost-Efficient de Novo Template-Based  Molecular Generation" [[arXiv]](https://arxiv.org/abs/2506.19865).
+Code for "Scalable and Cost-Efficient de Novo Template-Based Molecular Generation" [[arXiv]](https://arxiv.org/abs/2506.19865).
 Repository based on [RGFN](https://github.com/koziarskilab/RGFN) and [RetroGFN](https://github.com/gmum/RetroGFN).
 
 SCENT is a follow-up of the RGFN paper [[arXiv]](https://arxiv.org/abs/2406.08506) extending RGFN with the following components:
+
 - **Recursive Cost Guidance** for the backward policy, which utilizes a machine
-learning model to approximate the recursive cost of backward transitions. From this, we derive
-two targeted strategies:
+  learning model to approximate the recursive cost of backward transitions. From this, we derive
+  two targeted strategies:
   - **Synthesis Cost Guidance**, which reduces synthesis cost and improves diversity in large building block settings; and
   - **Decomposability Guidance**, which enforces the validity of backward transitions by discouraging transitions through indecomposable molecules.
 - **Exploitation Penalty**, a simple yet effective regularizer that promotes exploration by penalizing
-repeated state-action pairs.
+  repeated state-action pairs.
 - **Dynamic Library** mechanism that augments the initial set of building blocks with
-high-reward intermediates discovered during optimization. This mechanism enables full-tree
-synthesis and increases mode coverage in both low- and high-resource scenarios.
+  high-reward intermediates discovered during optimization. This mechanism enables full-tree
+  synthesis and increases mode coverage in both low- and high-resource scenarios.
 
 SCENT finds many more high-reward modes than RGFN, while being drastically faster (since **Decomposability Guidance** replaces expensive recursive decomposability checks).
 
@@ -47,8 +48,7 @@ pip install pre-commit
 pre-commit install
 ```
 
-For convenience all experiments will be logged to `experiments` directory. If you want to store the experiments results
-on other partition, you can create a symlink to the desired location:
+For convenience all experiments will be logged to `experiments` directory. If you want to store the experiments results on other partition, you can create a symlink to the desired location:
 
 ```bash
 ln -s <your_path> experiments
@@ -57,6 +57,7 @@ ln -s <your_path> experiments
 <details><summary><h3 style="display:inline-block">(Optional) Setup Vina-GPU-2.1</h3></summary>
 
 Before following the instructions below, **please read these important notes**:
+
 1. The user-specified workspace directory must be a full path.
 2. The Vina-GPU-2.1 docking proxy requires a system-wide installation of CUDA to work on GPU (loaded by, e.g., `module load cuda/11.8`).
 3. The setup.sh script installs Boost 1.83.0 to the workspace directory. If you would like to use a different version of boost, you will need to modify the setup.sh script.
@@ -98,6 +99,14 @@ Finally, note that GNEprop requires a system-wide installation of CUDA to work o
 
 </details>
 
+## Setup Binding Affinity Pipline Proxies
+
+To use proxies implemented inside the [BindingAffinityPipeline](https://github.com/koziarskilab/BindingAffinityPipeline) repository, you need to install the repository from source:
+
+```bash
+pip install git+https://github.com/koziarskilab/BindingAffinityPipeline.git@feature/rgfn_proxy
+```
+
 ## Train
 
 To train the SCENT using sEH proxy, run:
@@ -112,6 +121,7 @@ package that allows for lightweight models configuration along with dependency i
 ## Building Blocks Library
 
 Configuration files for the SMALL, MEDIUM, and LARGE settings are available in `configs/envs/settings`. The building block superset used in the MEDIUM and LARGE settings can be requested from [Enamine](https://enamine.net/building-blocks/building-blocks-catalog). The `small_extended.gin` configuration file defines the SMALL setting with additional support for 3- and 4-ary reaction templates.
+
 <details><summary><h3 style="display:inline-block">Project Structure</h3></summary>
 
 ### API

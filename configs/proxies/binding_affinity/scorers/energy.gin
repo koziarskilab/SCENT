@@ -1,0 +1,2 @@
+bap_proxy/gin.singleton.constructor = @EnergyScorer
+bap_proxy = @bap_proxy/gin.singleton()

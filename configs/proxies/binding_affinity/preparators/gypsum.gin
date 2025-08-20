@@ -1,0 +1,13 @@
+GypsumPreparator.n_conformers = %n_conformers
+GypsumPreparator.n_workers = %n_preparator_workers
+GypsumPreparator.thoroughness = 3
+GypsumPreparator.pH_low_bound = 6.4
+GypsumPreparator.pH_upp_bound = 8.4
+GypsumPreparator.pKa_precision = 1.0
+GypsumPreparator.max_variants_per_compound = 8
+GypsumPreparator.skip_making_tautomers = False
+GypsumPreparator.skip_enumerate_chiral_mol = False
+GypsumPreparator.skip_enumerate_double_bonds = False
+
+preparator/gin.singleton.constructor = @GypsumPreparator
+preparator = @preparator/gin.singleton()

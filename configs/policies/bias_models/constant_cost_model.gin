@@ -1,0 +1,6 @@
+ConstantCostModel.path_cost_proxy = %path_cost_proxy
+ConstantCostModel.use_dataset = 'override'
+ConstantCostModel.constant_cost = 0.0
+
+cost_model/gin.singleton.constructor = @ConstantCostModel
+cost_model = @cost_model/gin.singleton()

@@ -1,0 +1,7 @@
+BoltzDocker.cache_dir = "external/boltz_cache"
+
+BoltzDocker.msa_source = "cache"
+BoltzDocker.condition_on_residues = False
+
+bap_proxy/gin.singleton.constructor = @BoltzDocker
+bap_proxy = @bap_proxy/gin.singleton()

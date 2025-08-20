@@ -1,0 +1,5 @@
+base_data_dir = "data/our_public"
+base_cache_dir = "data/cache"
+
+receptor_name = 'ClpP-fixed.pdb'
+receptor_metadata_name = 'null'

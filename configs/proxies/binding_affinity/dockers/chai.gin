@@ -1,0 +1,15 @@
+ChaiDocker.n_workers = 0
+ChaiDocker.chai_conda_env = "chai"
+ChaiDocker.chai_path = "external/chai/run_chai.py"
+ChaiDocker.num_diffn_timesteps = 200
+# ChaiDocker.num_diffn_samples = 5
+ChaiDocker.device = "cuda"
+ChaiDocker.use_esm_embeddings = True
+ChaiDocker.use_msa_server = False
+ChaiDocker.msa_server_url = "https://api.colabfold.com"
+ChaiDocker.use_msa_cache = False
+ChaiDocker.pocket_conditioning = False
+ChaiDocker.project_conda_env = "rgfn"
+
+bap_proxy/gin.singleton.constructor = @ChaiDocker
+bap_proxy = @bap_proxy/gin.singleton()

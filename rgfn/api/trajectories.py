@@ -48,6 +48,15 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
         """
         return len(self._states_list)
 
+    def trajectory_lengths(self):
+        """
+        Return the length of each trajectory in the batch.
+
+        Returns:
+            a list of integers containing the length of each trajectory in the batch.
+        """
+        return [len(states) for states in self._states_list]
+
     def add_source_states(self, source_states: List[TState]) -> None:
         """
         Add source states to the trajectories. The source states are the states from which the trajectories start.
@@ -96,6 +105,61 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
             self._forward_action_spaces_list[in_idx].append(forward_action_spaces[out_idx])
             self._backward_action_spaces_list[in_idx].append(backward_action_spaces[out_idx])
             self._actions_list[in_idx].append(actions[out_idx])
+
+    def backtrack_to_state_idx(
+        self, state_idx: List[int]
+    ) -> "Trajectories[TState, TActionSpace, TAction]":
+        """
+        Backtracks the trajectories to the specified state indices, removing all states after the specified indices.
+
+        Args:
+            state_idx (List[int]): a list of indices to which the trajectories should be backtracked.
+
+        Returns:
+            a new Trajectories object containing the removed trajectories.
+        """
+        trajectory_lengths = self.trajectory_lengths()
+        assert len(state_idx) == len(
+            self
+        ), "Length of state_idx should be equal to the number of trajectories"
+        assert all(
+            [0 <= idx < length for idx, length in zip(state_idx, trajectory_lengths)]
+        ), "Invalid state index"
+        popped_trajectories = Trajectories()
+
+        popped_trajectories._states_list = [
+            states[idx:] for states, idx in zip(self._states_list, state_idx)
+        ]
+        popped_trajectories._forward_action_spaces_list = [
+            action_spaces[idx:]
+            for action_spaces, idx in zip(self._forward_action_spaces_list, state_idx)
+        ]
+        popped_trajectories._backward_action_spaces_list = [
+            action_spaces[idx:]
+            for action_spaces, idx in zip(self._backward_action_spaces_list, state_idx)
+        ]
+        popped_trajectories._actions_list = [
+            actions[idx:] for actions, idx in zip(self._actions_list, state_idx)
+        ]
+        popped_trajectories._reward_outputs = self._reward_outputs
+
+        assert self._forward_log_probs_flat is None
+        assert self._backward_log_probs_flat is None
+        assert self._log_flows_flat is None
+
+        self._states_list = [states[: idx + 1] for states, idx in zip(self._states_list, state_idx)]
+        self._forward_action_spaces_list = [
+            action_spaces[:idx]
+            for action_spaces, idx in zip(self._forward_action_spaces_list, state_idx)
+        ]
+        self._backward_action_spaces_list = [
+            action_spaces[:idx]
+            for action_spaces, idx in zip(self._backward_action_spaces_list, state_idx)
+        ]
+        self._actions_list = [actions[:idx] for actions, idx in zip(self._actions_list, state_idx)]
+        self._reward_outputs = None
+
+        return popped_trajectories
 
     # def get_all_states_flat(self) -> List[TState]:
     #     return [state for states in self._states_list for state in states]
@@ -438,6 +502,17 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
             trajectories._costs = [cost for costs in costs_list for cost in costs]
         return trajectories
 
+    @classmethod
+    def to_trajectories(
+        cls, trajectories: "Trajectories[TState, TActionSpace, TAction]"
+    ) -> List["Trajectories[TState, TActionSpace, TAction]"]:
+        """
+        Split a Trajectories object into a list of Trajectories objects. Each Trajectories object contains only one
+        trajectory.
+        """
+        masks = torch.eye(len(trajectories), dtype=torch.bool)
+        return [trajectories.masked_select(mask) for mask in masks]
+
     def set_device(self, device: str, recursive: bool = True):
         """
         Set the device of the trajectories.
@@ -464,6 +539,28 @@ class Trajectories(Generic[TState, TActionSpace, TAction]):
         )
         if self._reward_outputs is not None:
             self._reward_outputs.set_device(device)
+
+    def __getitem__(self, idx: int) -> "Trajectories[TState, TActionSpace, TAction]":
+        assert 0 <= idx < len(self), "Index out of range"
+        mask = torch.zeros(len(self), dtype=torch.bool)
+        mask[idx] = True
+        return self.masked_select(mask)
+
+    def __setitem__(self, idx: int, value: "Trajectories[TState, TActionSpace, TAction]") -> None:
+        assert 0 <= idx < len(self), "Index out of range"
+        assert len(value) == 1, "Value must contain a single trajectory"
+
+        self._states_list[idx] = value._states_list[0]
+        self._actions_list[idx] = value._actions_list[0]
+        self._forward_action_spaces_list[idx] = value._forward_action_spaces_list[0]
+        self._backward_action_spaces_list[idx] = value._backward_action_spaces_list[0]
+
+        if self._reward_outputs is not None:
+            self._reward_outputs[idx] = value._reward_outputs[0]
+
+        assert self._forward_log_probs_flat is None and value._forward_log_probs_flat is None
+        assert self._backward_log_probs_flat is None and value._backward_log_probs_flat is None
+        assert self._log_flows_flat is None and value._log_flows_flat is None
 
     def __repr__(self):
         def _single_trajectory_repr(states: List[TState], actions: List[TAction]) -> str:

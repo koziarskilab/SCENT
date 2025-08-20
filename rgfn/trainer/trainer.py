@@ -39,7 +39,7 @@ class Trainer(Generic[TState, TActionSpace, TAction], TrainingHooksMixin):
         run_dir: str | Path,
         logger: LoggerBase | None,
         train_forward_sampler: SamplerBase[TState, TActionSpace, TAction] | None,
-        train_backward_sampler: SamplerBase[TState, TActionSpace, TAction] | None = None,
+        train_backward_sampler: ReplayBufferBase[TState, TActionSpace, TAction] | None = None,
         train_replay_buffer: ReplayBufferBase[TState, TActionSpace, TAction] | None,
         train_forward_n_trajectories: int,
         train_backward_n_trajectories: int = 0,
@@ -59,6 +59,7 @@ class Trainer(Generic[TState, TActionSpace, TAction], TrainingHooksMixin):
         gradient_clipping_norm: float = 10.0,
         lr_scheduler: LRScheduler | None = None,
         n_iterations: int,
+        save_checkpoint_every_n: int | None = None,
         checkpoint_mode: Literal["none", "last", "best"] = "best",
         best_metric: str = "loss",
         metric_direction: Literal["auto", "min", "max"] = "auto",
@@ -92,6 +93,7 @@ class Trainer(Generic[TState, TActionSpace, TAction], TrainingHooksMixin):
             gradient_clipping_norm: the norm to which to clip the gradients.
             lr_scheduler: the learning rate scheduler to use.
             n_iterations: number of iterations to train.
+            save_checkpoint_every_n: number of iterations after which to save the checkpoint.
             checkpoint_mode: whether to save the last checkpoint, the best checkpoint, or none.
             best_metric: the metric to use for determining the best checkpoint.
             metric_direction: the direction of the metric to use for determining the best checkpoint.
@@ -127,6 +129,7 @@ class Trainer(Generic[TState, TActionSpace, TAction], TrainingHooksMixin):
         if device == "auto":
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
+        self.save_checkpoint_every_n = save_checkpoint_every_n
         self.checkpoint_mode = checkpoint_mode
         self.best_metric = best_metric
         self.gradient_clipping_norm = gradient_clipping_norm
@@ -317,6 +320,17 @@ class Trainer(Generic[TState, TActionSpace, TAction], TrainingHooksMixin):
             hook_update_dict |= self.on_end_computing_objective(i, trajectories_container)
 
             objective.loss.backward()
+
+            for key, param in self.objective.named_parameters():
+                # check for infinity in param
+                if (
+                    param.grad is None
+                    or torch.isinf(param.grad).any()
+                    or torch.isnan(param.grad).any()
+                ):
+                    print(f"Parameter {key} has inf or nan gradient: {param.grad}")
+                    raise ValueError(f"Parameter {key} has inf or nan gradient: {param.grad}")
+
             torch.nn.utils.clip_grad_norm_(self.objective.parameters(), self.gradient_clipping_norm)
             self.optimizer.step()
             if self.lr_scheduler is not None:
@@ -374,6 +388,9 @@ class Trainer(Generic[TState, TActionSpace, TAction], TrainingHooksMixin):
                         )
                 else:
                     self.best_valid_metrics = valid_metrics
+
+            elif self.save_checkpoint_every_n is not None and i % self.save_checkpoint_every_n == 0:
+                self.make_checkpoint(checkpoint_name="last_gfn", metrics=metrics | {"epoch": i})
 
             if (
                 self.dynamic_fragment_library is not None

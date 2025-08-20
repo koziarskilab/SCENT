@@ -1,0 +1,14 @@
+TrajectoryBalanceObjectiveReinforce.forward_policy = %forward_policy
+TrajectoryBalanceObjectiveReinforce.backward_policy = %backward_policy
+TrajectoryBalanceObjectiveReinforce.path_cost_proxy = %path_cost_proxy
+TrajectoryBalanceObjectiveReinforce.z_dim = 16
+
+uniform/RewardPrioritizedReplayBuffer.temperature = 0.0
+uniform_replay_buffer/gin.singleton.constructor = @uniform/RewardPrioritizedReplayBuffer
+uniform_replay_buffer = @uniform_replay_buffer/gin.singleton()
+
+Trainer.train_backward_sampler = %uniform_replay_buffer
+Trainer.train_backward_n_trajectories = 64
+
+objective/gin.singleton.constructor = @TrajectoryBalanceObjectiveReinforce
+objective = @objective/gin.singleton()

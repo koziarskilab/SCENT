@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import gin
 from rdkit import RDLogger
@@ -56,7 +56,7 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
     ) -> Dict[str, Any]:
         new_fragments = self.data_factory.get_fragments() + fragments
         assert all(idx == f.idx for idx, f in enumerate(new_fragments))
-        self._setup_fragments(new_fragments)
+        self._setup_fragments(new_fragments, self.div_fragment_idxs)
         self.action_space_cache.clear()
         self.recurrence_cache.clear()
         return {}
@@ -65,6 +65,7 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
         self,
         data_factory: ReactionDataFactory,
         max_num_reactions: int,
+        min_num_reactions: int = 1,
         use_recurrence: bool = False,
         use_cache: bool = True,
         share_cache: bool = True,
@@ -77,6 +78,9 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
         self.reaction_anchor_map = data_factory.get_reaction_anchor_map()
         self.anchored_disconnections = data_factory.get_anchored_disconnections()
         self.max_num_reaction = max_num_reactions
+        self.min_num_reaction = min_num_reactions
+        assert min_num_reactions >= 1
+        assert max_num_reactions >= min_num_reactions
         self.action_space_cache = Cache(max_size=50_000)
         self.recurrence_cache = Cache(max_size=10_000_000)
         self.use_cache = use_cache
@@ -89,15 +93,24 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
             ReactionActionA(anchored_reaction=None, idx=len(self.anchored_reactions)),
         )
 
+        ## Handle last step diversification reactions
+        self.div_reaction_idxs = data_factory.get_div_reaction_idxs()
+        self.anchored_div_reaction_idxs = data_factory.get_anchored_div_reaction_idxs()
+
+        ## Handle last step fragments
+        self.div_fragment_idxs = data_factory.get_div_fragments_idxs()
+
         self.fragments = ...
         self.all_actions_0 = ...
         self.all_actions_b = ...
         self.pattern_to_compatible_fragments = ...
-        self.pattern_to_min_fragment_num_reactions = ...
         self.smiles_to_fragment_idx = ...
         self.fragment_smiles_set = ...
 
-        self._setup_fragments(fragments=data_factory.get_fragments())
+        self._setup_fragments(
+            fragments=data_factory.get_fragments(),
+            div_fragments_idxs=self.div_fragment_idxs,
+        )
 
         self.forward_action_space_dict = {
             ReactionState0: self._get_forward_action_spaces_0,
@@ -130,11 +143,13 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
             ReactionActionEarlyTerminate: self._apply_backward_actions_early_terminate,
         }
 
-    def _setup_fragments(self, fragments: List[Molecule]):
+    def _setup_fragments(self, fragments: List[Molecule], div_fragments_idxs: List[int] = []):
         self.fragments = fragments
         assert all(idx == f.idx for idx, f in enumerate(self.fragments))
         self.all_actions_0 = tuple(
-            ReactionAction0(fragment=f, idx=i) for i, f in enumerate(self.fragments)
+            ReactionAction0(fragment=f, idx=i)
+            for i, f in enumerate(self.fragments)
+            if i not in div_fragments_idxs
         )
 
         self.all_actions_b = tuple(
@@ -142,18 +157,12 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
         )
 
         self.pattern_to_compatible_fragments: Dict[Pattern, List[Molecule]] = {}
-        self.pattern_to_min_fragment_num_reactions: Dict[Pattern, int] = {}
         for reaction in self.reactions:
             for pattern in reaction.left_side_patterns:
-                self.pattern_to_min_fragment_num_reactions[pattern] = self.max_num_reaction + 10
                 fragments = []
                 for i, fragment in enumerate(self.fragments):
                     if fragment.rdkit_mol.HasSubstructMatch(pattern.rdkit_pattern):
                         fragments.append(fragment)
-                        self.pattern_to_min_fragment_num_reactions[pattern] = min(
-                            self.pattern_to_min_fragment_num_reactions[pattern],
-                            fragment.num_reactions,
-                        )
                 self.pattern_to_compatible_fragments[pattern] = fragments
 
         self.smiles_to_fragment_idx = {fragment.smiles: fragment.idx for fragment in self.fragments}
@@ -180,23 +189,24 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
         self, state: ReactionStateA
     ) -> ReactionActionSpaceA | ReactionActionSpaceEarlyTerminate:
         mask = [False] * len(self.all_actions_a)
-        if state.num_reactions > 0:
+        if state.num_reactions >= self.min_num_reaction:
             mask[-1] = True
 
         if state.num_reactions < self.max_num_reaction:
             mol = state.molecule.rdkit_mol
             for i, action in enumerate(self.all_actions_a[:-1]):
+                if state.num_reactions == self.max_num_reaction - 1:  # last step reaction
+                    if i not in self.anchored_div_reaction_idxs:
+                        # this is not a diversification reaction, skip it
+                        continue
+
                 action: ReactionActionA
                 anchored_reaction = action.anchored_reaction
                 anchored_pattern = anchored_reaction.anchored_pattern
                 if not mol.HasSubstructMatch(anchored_pattern.rdkit_pattern):
                     continue
-                sum_min_num_reactions = sum(
-                    self.pattern_to_min_fragment_num_reactions[pattern]
-                    for pattern in anchored_reaction.fragment_patterns
-                )
-                if sum_min_num_reactions <= self.max_num_reaction - state.num_reactions:
-                    mask[i] = True
+
+                mask[i] = True
 
         if not any(mask):
             return ReactionActionSpaceEarlyTerminate()
@@ -206,15 +216,24 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
         self, state: ReactionStateB
     ) -> ReactionActionSpaceB | ReactionActionSpaceEarlyTerminate:
         next_pattern = state.anchored_reaction.fragment_patterns[len(state.fragments)]
-        rest_min_sum_num_reactions = sum(
-            self.pattern_to_min_fragment_num_reactions[pattern]
-            for pattern in state.anchored_reaction.fragment_patterns[len(state.fragments) + 1 :]
-        )
-        max_num_reactions = self.max_num_reaction - state.num_reactions - rest_min_sum_num_reactions
+
+        if state.num_reactions == self.max_num_reaction - 1:
+            # Last step diversification reaction
+            max_num_reactions = self.max_num_reaction - state.num_reactions
+            assert max_num_reactions == 1
+            fragment_idx_blacklist = []  # allow all fragments
+        else:
+            assert state.num_reactions < self.max_num_reaction
+            max_num_reactions = self.max_num_reaction - state.num_reactions
+            fragment_idx_blacklist = (
+                self.div_fragment_idxs
+            )  # do not allow diversification fragments
+
         possible_actions = [
             self.all_actions_b[fragment.idx]
             for fragment in self.pattern_to_compatible_fragments[next_pattern]
             if fragment.num_reactions < max_num_reactions
+            and (fragment.idx not in fragment_idx_blacklist)
         ]
 
         if len(possible_actions) == 0:
@@ -279,29 +298,46 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
         if self.use_cache and state in self.action_space_cache:
             return self.action_space_cache[state]
 
+        is_last_step = state.num_reactions == self.max_num_reaction
+
         possible_actions: List[ReactionAction0 | ReactionActionC] = []
-        if self._is_fragment(state.molecule.smiles):
+        if self._is_non_div_fragment(state.molecule.smiles):
             fragment_idx = self.smiles_to_fragment_idx[state.molecule.smiles]
-            fragment = self.fragments[fragment_idx]
+            fragment: Molecule = self.fragments[fragment_idx]
             if state.num_reactions == fragment.num_reactions:
                 action_0 = self.all_actions_0[fragment_idx]
                 possible_actions.append(action_0)
 
         possible_actions_set = set()
         if state.num_reactions > 0:
-            for reaction, disconnection in zip(self.reactions, self.disconnections):
+            all_reactions, all_disconnections = self.reactions, self.disconnections
+            if is_last_step:
+                # last step reactions are diversification reactions
+                all_reactions = [
+                    r for i, r in enumerate(self.reactions) if i in self.div_reaction_idxs
+                ]
+                all_disconnections = [
+                    d for i, d in enumerate(self.disconnections) if i in self.div_reaction_idxs
+                ]
+            for reaction, disconnection in zip(all_reactions, all_disconnections):
                 reactants_list_list = disconnection.rdkit_rxn.RunReactants(
                     [state.molecule.rdkit_mol]
                 )
                 for reactants_list in reactants_list_list:
                     fragments, non_fragments, non_fragment_indices = self._lazy_is_fragment_check(
-                        reactants_list
+                        molecules=reactants_list,
+                        is_fragment_fn=self._is_fragment
+                        if is_last_step
+                        else self._is_non_div_fragment,
                     )
                     if len(non_fragments) > 1:
                         continue
 
                     if len(non_fragments) == 0:
                         for idx, previous_molecule in enumerate(fragments):
+                            # if self._is_div_fragment(previous_molecule.smiles):
+                            # Last step fragment cannot be a previous molecule
+                            # continue
                             previous_min_num_reactions = min(1, previous_molecule.num_reactions)
                             previous_fragments = fragments[:idx] + fragments[idx + 1 :]
                             num_subtree_reactions = sum(f.num_reactions for f in previous_fragments)
@@ -329,6 +365,10 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
                         previous_molecule = non_fragments[0]
                         if not previous_molecule.valid:
                             continue
+                        # if self._is_div_fragment(previous_molecule.smiles):
+                        #     assert not is_last_step
+                        # continue
+
                         num_subtree_reactions = sum(f.num_reactions for f in fragments)
                         previous_num_reactions = state.num_reactions - 1 - num_subtree_reactions
                         action = ReactionActionC(
@@ -363,8 +403,22 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
     def _is_fragment(self, smiles: str) -> bool:
         return smiles in self.fragment_smiles_set
 
+    def _is_div_fragment(self, smiles: str) -> bool:
+        return (
+            self._is_fragment(smiles)
+            and self.smiles_to_fragment_idx[smiles] in self.div_fragment_idxs
+        )
+
+    def _is_non_div_fragment(self, smiles: str) -> bool:
+        return (
+            self._is_fragment(smiles)
+            and self.smiles_to_fragment_idx[smiles] not in self.div_fragment_idxs
+        )
+
     def _lazy_is_fragment_check(
-        self, molecules: List[Mol]
+        self,
+        molecules: List[Mol],
+        is_fragment_fn: Callable[[str], bool],
     ) -> Tuple[List[Molecule], List[Molecule], List[int]]:
         """
         Checks which of the given molecules are fragments and which need to be further decomposed.
@@ -381,7 +435,7 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
         non_fragments_indices = []
         for idx, mol in enumerate(molecules):
             molecule = Molecule(mol)
-            if molecule.valid and self._is_fragment(molecule.smiles):
+            if molecule.valid and is_fragment_fn(molecule.smiles):
                 fragment_idx = self.smiles_to_fragment_idx[molecule.smiles]
                 fragments.append(self.fragments[fragment_idx])
             else:
@@ -390,58 +444,6 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
                 if len(non_fragments) > 1:
                     break
         return fragments, non_fragments, non_fragments_indices
-
-    def _is_decomposable(self, molecule: Molecule, n_reactions: int) -> bool:
-        """
-        Recursive helper for the decompose function. Returns true if the given Molecule
-        can be disconnected fully into fragments in our library.
-
-        Base case: is the molecule a fragment in our library? If yes, we're done.
-
-        Recursive case: For each disconnect reaction, can we use this reaction to
-            disconnect our molecule? Iterate through all fragment pairs generated by
-            each reaction. If any fragment pair can be decomposed, return true.
-
-        """
-
-        if (molecule.smiles, n_reactions) in self.recurrence_cache:
-            return self.recurrence_cache[(molecule.smiles, n_reactions)]
-
-        if not molecule.valid:
-            self.recurrence_cache[(molecule.smiles, n_reactions)] = False
-            return False
-
-        if n_reactions == 0:
-            return self._is_fragment(molecule.smiles)
-
-        # Decompose the molecule by all reverse reactions possible.
-        # If ANY of them work then return True.
-        for reaction, disconnection in zip(self.reactions, self.disconnections):
-            reactants_list = disconnection.rdkit_rxn.RunReactants((molecule.rdkit_mol,))
-            for reactants in reactants_list:
-                fragments, non_fragments, _ = self._lazy_is_fragment_check(reactants)
-                if len(fragments) + len(non_fragments) == 0 or len(non_fragments) > 1:
-                    continue
-
-                if len(non_fragments) == 0:
-                    for fragment in fragments:
-                        if self._is_decomposable(fragment, n_reactions - 1):
-                            self.recurrence_cache[(molecule.smiles, n_reactions)] = True
-                            return True
-                    continue
-
-                if self._is_decomposable(non_fragments[0], n_reactions - 1):
-                    output_products = reaction.rdkit_rxn.RunReactants(
-                        [r.rdkit_mol for r in reactants]
-                    )
-                    for mol in output_products:
-                        if molecule == Molecule(mol[0]):
-                            self.recurrence_cache[(molecule.smiles, n_reactions)] = True
-                            return True
-
-        # We were unable to find a fully decomposable fragment pair.
-        self.recurrence_cache[(molecule.smiles, n_reactions)] = False
-        return False
 
     def _is_decomposable(self, molecule: Molecule, n_reactions: int) -> bool:
         """
@@ -478,7 +480,10 @@ class ReactionEnv(EnvBase[ReactionState, ReactionActionSpace, ReactionAction]):
         for reaction, disconnection in zip(self.reactions, self.disconnections):
             reactants_list = disconnection.rdkit_rxn.RunReactants((molecule.rdkit_mol,))
             for reactants in reactants_list:
-                fragments, non_fragments, _ = self._lazy_is_fragment_check(reactants)
+                fragments, non_fragments, _ = self._lazy_is_fragment_check(
+                    molecules=reactants,
+                    is_fragment_fn=self._is_non_div_fragment,  # Internal molecules should not contain div fragments
+                )
                 if len(fragments) + len(non_fragments) == 0 or len(non_fragments) > 1:
                     continue
 

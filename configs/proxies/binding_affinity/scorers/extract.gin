@@ -1,0 +1,5 @@
+bap_proxy/gin.singleton.constructor = @ExtractScorer
+bap_proxy = @bap_proxy/gin.singleton()
+
+# Those two values must be aligned
+ExtractScorer.value_name = None

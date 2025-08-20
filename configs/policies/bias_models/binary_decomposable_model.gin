@@ -1,0 +1,5 @@
+BinaryDecomposableModel.path_cost_proxy = %path_cost_proxy
+BinaryDecomposableModel.max_num_reactions = %max_num_reactions
+
+decomposable_model/gin.singleton.constructor = @BinaryDecomposableModel
+decomposable_model = @decomposable_model/gin.singleton()

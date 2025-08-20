@@ -1,4 +1,16 @@
 proxy/gin.singleton.constructor = @SenoProxy
 train_proxy = @proxy/gin.singleton()
 valid_proxy = %train_proxy
-SenoProxy.checkpoint_path = "external/gneprop/models/seno.ckpt"
+
+acquisition/gin.singleton.constructor = @UpperConfidenceBound
+UpperConfidenceBound.beta = 1.0
+
+bayesian_model/gin.singleton.constructor = @GNEpropBayesianModel
+GNEpropBayesianModel.checkpoint_path = "external/gneprop/models/seno.ckpt"
+GNEpropBayesianModel.batch_size = 128
+GNEpropBayesianModel.mc_iteration = 25
+GNEpropBayesianModel.dropout_p = 0.2
+
+SenoProxy.acquisition_factory = @acquisition/gin.singleton()
+SenoProxy.model = @bayesian_model/gin.singleton()
+SenoProxy.best_f = 0.0

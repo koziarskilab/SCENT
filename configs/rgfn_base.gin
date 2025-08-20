@@ -4,6 +4,7 @@ import rgfn
 user_root_dir = 'experiments'
 include 'configs/envs/rgfn.gin'
 include 'configs/loggers/wandb.gin'
+include 'configs/envs/dataset/rgfn_new.gin'
 include 'configs/samplers/random.gin'
 include 'configs/rewards/exponential.gin'
 include 'configs/policies/rgfn.gin'
@@ -44,7 +45,7 @@ train_metrics = [
 TanimotoSimilarityModes.term_name = %proxy_component_name
 NumScaffoldsFound.proxy_component_name = %proxy_component_name
 ScaffoldCostsList.proxy_component_name = %proxy_component_name
-SaveSynthesisPaths.proxy_component_name = %proxy_component_name
+SaveSynthesisPaths.proxy_component_names = []
 NumScaffoldsFound.proxy_value_threshold_list = [7, 8]
 NumScaffoldsFound.proxy_component_name = None
 TanimotoSimilarityModes.run_dir = %run_dir
@@ -71,6 +72,8 @@ Trainer.valid_every_n_iterations = 100000000
 Trainer.valid_sampler = %valid_sampler
 Trainer.valid_n_trajectories = 1000
 Trainer.valid_batch_size = 64
+Trainer.valid_after_n_hours = None
+Trainer.save_checkpoint_every_n = 100
 Trainer.objective = %objective
 Trainer.optimizer = @TrajectoryBalanceOptimizer()
 Trainer.lr_scheduler = None

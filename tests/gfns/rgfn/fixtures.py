@@ -26,25 +26,42 @@ from rgfn.gfns.reaction_gfn.proxies.path_cost_proxy import PathCostProxy
 
 @pytest.fixture(scope="module")
 def reaction_path() -> Path:
-    return Path(__file__).parent / "../../../data/small/templates.txt"
+    return Path(__file__).parent / "../../../data/psalm_new/templates.txt"
 
 
 @pytest.fixture(scope="module")
 def fragment_path() -> Path:
-    return Path(__file__).parent / "../../../data/small/fragments.txt"
+    return Path(__file__).parent / "../../../data/psalm_new/fragments.txt"
 
 
 @pytest.fixture(scope="module")
-def rgfn_data_factory(reaction_path: Path, fragment_path: Path) -> ReactionDataFactory:
+def last_step_fragment_path() -> Path:
+    return Path(__file__).parent / "../../../data/synflow/fragment_16k.txt"
+
+
+@pytest.fixture(scope="module")
+def last_step_reaction_path() -> Path:
+    return Path(__file__).parent / "../../../data/psalm_new/templates_lsd.txt"
+
+
+@pytest.fixture(scope="module")
+def rgfn_data_factory(
+    reaction_path: Path,
+    fragment_path: Path,
+    last_step_fragment_path: Path,
+    last_step_reaction_path: Path,
+) -> ReactionDataFactory:
     return ReactionDataFactory(
         reaction_path=reaction_path,
         fragment_path=fragment_path,
+        last_step_fragment_path=last_step_fragment_path,
+        last_step_reaction_path=last_step_reaction_path,
     )
 
 
 @pytest.fixture(scope="module")
 def rgfn_env(rgfn_data_factory: ReactionDataFactory) -> ReactionEnv:
-    return ReactionEnv(data_factory=rgfn_data_factory, max_num_reactions=2)
+    return ReactionEnv(data_factory=rgfn_data_factory, max_num_reactions=3, min_num_reactions=3)
 
 
 @pytest.fixture(scope="module")

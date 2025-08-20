@@ -1,4 +1,5 @@
 import argparse
+import os
 from pathlib import Path
 
 import gin
@@ -19,8 +20,13 @@ if __name__ == "__main__":
 
     seed_everything(seed)
     config_name = Path(config).stem
-    run_name = f"{config_name}/{get_time_stamp()}"
+    if "SLURM_JOB_ID" in os.environ:
+        # If we're in a SLURM environment, use the job id as the run id
+        run_name = f"{config_name}/{os.environ['SLURM_JOB_ID']}"
+    else:
+        run_name = f"{config_name}/{get_time_stamp()}"
     gin.parse_config_files_and_bindings([config], bindings=[f'run_name="{run_name}"'])
+
     trainer = Trainer(resume_path=checkpoint_path)
     trainer.logger.log_code("rgfn")
     trainer.logger.log_to_file(gin.operative_config_str(), "operative_config")

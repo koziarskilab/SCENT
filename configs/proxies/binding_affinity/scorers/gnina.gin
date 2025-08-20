@@ -1,0 +1,4 @@
+GninaScorer.scoring = "CNNaffinity" # "CNNscore", "CNNaffinity", "SMINA"
+
+bap_proxy/gin.singleton.constructor = @GninaScorer
+bap_proxy = @bap_proxy/gin.singleton()

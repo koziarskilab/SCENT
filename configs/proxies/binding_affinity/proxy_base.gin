@@ -1,0 +1,32 @@
+import gin
+import bap.gin_config.get_name
+
+include 'configs/proxies/binding_affinity/preparators/none.gin'
+include 'configs/proxies/binding_affinity/dockers/none.gin'
+include 'configs/proxies/binding_affinity/scorers/none.gin'
+include 'configs/proxies/binding_affinity/receptors/none.gin'
+
+n_conformers = 3
+
+get_name.hash_parameters = True
+preparator_name/get_name.object = %preparator
+proxy_name/get_name.object = %bap_proxy
+
+ProxyManager.receptor_name = %receptor_name
+ProxyManager.receptor_metadata_name = %receptor_metadata_name
+ProxyManager.n_conformers = %n_conformers
+ProxyManager.base_data_dir = %base_data_dir
+ProxyManager.base_cache_dir = %base_cache_dir
+ProxyManager.preparator_name = @preparator_name/get_name()
+ProxyManager.proxy_name = @proxy_name/get_name()
+
+Proxy.proxy_manager = @ProxyManager()
+Proxy.preparator_batch_size = 100
+Proxy.preparator = %preparator
+Proxy.use_proxy_server = False
+Proxy.proxy_batch_size = 100
+Proxy.proxy = %bap_proxy
+
+proxy/gin.singleton.constructor = @Proxy
+train_proxy = @proxy/gin.singleton()
+valid_proxy = %train_proxy

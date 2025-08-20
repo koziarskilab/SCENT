@@ -1,4 +1,6 @@
+from .chai_proxy.chai_docker import ChaiDockerProxy
 from .docking_proxy.docking_proxy import DockingMoleculeProxy
+from .gneprop_proxy import GNEpropBayesianModel
 from .qed_proxy import QEDProxy
 from .reinvent_prior_proxy import ReinventPriorProxy
 from .rnd_novelty_proxy import RNDNoveltyProxy

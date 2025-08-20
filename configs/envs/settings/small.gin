@@ -1,5 +1,7 @@
 reaction_path = 'data/small/templates.txt'
+last_step_reaction_path = None
 fragment_path = 'data/small/fragments.txt'
+last_step_fragment_path = None
 cost_path = 'data/small/fragment_to_real_cost.json'
 yield_path = 'data/small/templates_yields.csv'
 yield_value = None

@@ -1,0 +1,27 @@
+ChaiDockerProxy.n_workers = 16
+ChaiDockerProxy.conda_env = "chai"
+ChaiDockerProxy.chai_path = "external/chai/run_chai_parallel.py"
+ChaiDockerProxy.num_diffn_timesteps = 200
+ChaiDockerProxy.device = "cuda"
+ChaiDockerProxy.use_esm_embeddings = False
+ChaiDockerProxy.use_msa_cache = True
+ChaiDockerProxy.use_msa_server = False
+ChaiDockerProxy.use_proxy_server = True
+ChaiDockerProxy.msa_server_url = "https://api.colabfold.com"
+ChaiDockerProxy.pocket_conditioning = False
+
+ChaiDockerProxy.n_conformers = 3
+ChaiDockerProxy.conf_score_agg_method = 'max'
+ChaiDockerProxy.receptor_file_path = 'data/receptors/TG49-L0.pdb'
+ChaiDockerProxy.template_m8_file = 'data/receptors/metadata/6bba.m8'
+# consider remove template_m8_file for higher speed.
+ChaiDockerProxy.receptor_metadata_file_path = 'data/receptors/metadata/ClpP.json'
+
+ChaiDockerProxy.min_value = 0.5
+ChaiDockerProxy.max_value = 1.
+ChaiDockerProxy.clip_at_min = True
+ChaiDockerProxy.clip_at_max = False
+
+proxy/gin.singleton.constructor = @ChaiDockerProxy
+train_proxy = @proxy/gin.singleton()
+valid_proxy = %train_proxy

@@ -7,7 +7,7 @@ from .fixtures import *
 
 
 @pytest.mark.parametrize("n_trajectories", [10])
-@pytest.mark.parametrize("seed", list(range(10)))
+@pytest.mark.parametrize("seed", list(range(1000)))
 def test__rgfn_env__forward_backward_consistency(
     rgfn_env: ReactionEnv, n_trajectories: int, seed: int
 ):

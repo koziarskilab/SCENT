@@ -1,0 +1,3 @@
+PerfectOracleScorer.metrics = @Metrics()
+bap_proxy/gin.singleton.constructor = @PerfectOracleScorer
+bap_proxy = @bap_proxy/gin.singleton()

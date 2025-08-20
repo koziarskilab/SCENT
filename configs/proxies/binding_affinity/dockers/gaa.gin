@@ -1,0 +1,4 @@
+bap_proxy/gin.singleton.constructor = @GaaDocker
+bap_proxy = @bap_proxy/gin.singleton()
+
+GaaDocker.n_workers = %n_docker_workers

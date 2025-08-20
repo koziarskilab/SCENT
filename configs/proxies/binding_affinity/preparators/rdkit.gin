@@ -1,0 +1,5 @@
+RdkitPreparator.n_conformers = %n_conformers
+RdkitPreparator.n_workers = %n_preparator_workers
+
+preparator/gin.singleton.constructor = @RdkitPreparator
+preparator = @preparator/gin.singleton()

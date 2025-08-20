@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, Iterator, List, Sequence, Tuple, Type
+from typing import Any, Callable, Dict, Iterator, List, Sequence, Tuple, Type
 
 import gin
 import torch
@@ -62,7 +62,8 @@ class RNDNoveltyForwardPolicy(
         num_heads: int = 4,
         num_layers: int = 5,
         lr: float = 0.001,
-        temperature: float = 1.0,
+        temperature: float = 2.0,
+        zeroth_temperature_at_iteration: int | None = None,
     ):
         super().__init__()
         self.anchored_reactions = data_factory.get_anchored_reactions()
@@ -125,10 +126,26 @@ class RNDNoveltyForwardPolicy(
         self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
 
         self.temperature = temperature
+        self.zeroth_temperature_at_iteration = zeroth_temperature_at_iteration
+        self.initial_temperature = temperature
 
     @property
     def hook_objects(self) -> List["TrainingHooksMixin"]:
         return [self.predictor_action_embedding_a, self.predictor_action_embedding_b]
+
+    def on_end_sampling(
+        self,
+        iteration_idx: int,
+        trajectories_container: TrajectoriesContainer,
+        recursive: bool = True,
+    ) -> Dict[str, Any]:
+        if self.zeroth_temperature_at_iteration is not None:
+            self.temperature = max(
+                0.0,
+                self.initial_temperature
+                - (iteration_idx / self.zeroth_temperature_at_iteration) * self.initial_temperature,
+            )
+        return {}
 
     def parameters(self, recurse: bool = True) -> Iterator[Parameter]:
         yield from self.predictor_gnn.parameters()

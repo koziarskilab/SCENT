@@ -1,0 +1,5 @@
+LigUnityScorer.cache_dir = "external/ligunity"
+LigUnityScorer.pocket_residue_mode = "ligand"
+
+bap_proxy/gin.singleton.constructor = @LigUnityScorer
+bap_proxy = @bap_proxy/gin.singleton()

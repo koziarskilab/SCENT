@@ -13,8 +13,8 @@ class CachedProxyBase(ProxyBase[THashableState], abc.ABC):
     A base class for cached proxies. It caches the results of the proxy computation to avoid redundant computations.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.cache: Dict[THashableState, Dict[str, float] | List[float]] = {}
         self.total_calls = 0
         self.device = "cpu"

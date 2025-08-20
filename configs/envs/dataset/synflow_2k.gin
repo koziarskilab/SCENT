@@ -1,0 +1,5 @@
+chemistry_path = 'data/synflow/templates.txt'
+fragment_path = 'data/synflow/fragment_2k.txt'
+cost_path = 'data/synflow/fragment_2k_to_real_cost.json'
+yield_path = None
+yield_value = 0.75

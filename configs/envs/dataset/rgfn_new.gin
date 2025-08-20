@@ -1,0 +1,7 @@
+# chemistry_path = 'data/rgfn_new/chemistry.xlsx'
+chemistry_path = 'data/rgfn_new/chemistry_v3_diversification.xlsx'
+fragment_path = None
+cost_path = 'data/rgfn_new/fragment_to_real_cost.json'
+# yield_path = 'data/rgfn_new/templates_yields.csv'
+yield_path = None
+yield_value = 0.75

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from torch import nn
 
@@ -37,6 +37,24 @@ class TrainingHooksMixin:
         Returns a list containing all the recursive hook objects. The objects are unique.
         """
         return list(self._gather_all_recursive_hook_objects_dict().values())
+
+    def get_local_caches(self, recursive: bool = True) -> List[Tuple[str, Any]]:
+        """
+        Returns a dictionary containing the local caches of the hook objects.
+        """
+        caches = []
+        if recursive:
+            for hook_object in self._gather_all_recursive_hook_objects():
+                caches.extend(hook_object.get_local_caches(recursive=False))
+        return caches
+
+    def update_global_caches(self, local_caches: List[Tuple[str, Any]], recursive: bool = True):
+        """
+        Updates the global caches of the hook objects.
+        """
+        if recursive:
+            for hook_object in self._gather_all_recursive_hook_objects():
+                hook_object.update_global_caches(local_caches, recursive=False)
 
     def set_device(self, device: str, recursive: bool = True):
         """

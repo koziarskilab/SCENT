@@ -1,0 +1,2 @@
+bap_proxy/gin.singleton.constructor = @RandomScorer
+bap_proxy = @bap_proxy/gin.singleton()

@@ -1,0 +1,19 @@
+include 'configs/scent_base.gin'
+
+include 'configs/envs/settings/psalm.gin'
+include 'configs/proxies/binding_affinity/chai_docker.gin'
+include 'configs/proxies/composed/qed.gin'
+
+TanimotoSimilarityModes.proxy_term_threshold = 0.9
+TanimotoSimilarityModes.similarity_threshold = 0.5
+TanimotoSimilarityModes.max_modes = 5000
+beta = 48
+ScaffoldCostsList.proxy_value_threshold_list = [8]
+
+Trainer.valid_every_n_iterations = 200
+Trainer.valid_n_trajectories = 1000
+Trainer.valid_batch_size = 64
+Trainer.save_checkpoint_every_n = 1
+Trainer.train_forward_n_trajectories =32
+
+WandbLogger.mode = 'disabled'

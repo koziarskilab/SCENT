@@ -1,0 +1,5 @@
+chemistry_path = 'data/rgfn_new_filtered/templates.txt'
+fragment_path = 'data/rgfn_new_filtered/fragment_300_cheapest.txt'
+cost_path = 'data/rgfn_new_filtered/fragment_to_real_cost.json'
+yield_path = 'data/rgfn_new_filtered/templates_yields.csv'
+yield_value = None

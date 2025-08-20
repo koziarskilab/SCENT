@@ -1,5 +1,19 @@
-scripts/
+.DS_Store
+.vscode/
+*.out
+logs/
 configs/grid_search/
+backup/data/
+data_depr/
+data/rgfn_new/
+data/rgfn_new_filtered/
+data/synflow/
+data_depr/
+external/chai/demo*
+external/gneprop/
+notebooks/enamine_costs/
+notebooks/data/
+notebooks/results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -162,3 +176,4 @@ cython_debug/
 .idea/
 experiments/
 ignored/
+tmp*

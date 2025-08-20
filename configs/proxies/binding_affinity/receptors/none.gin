@@ -1,0 +1,5 @@
+receptor_name = None
+receptor_metadata_name = None
+
+base_data_dir = '/tmp'
+base_cache_dir = '/tmp/cache'
