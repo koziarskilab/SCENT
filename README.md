@@ -64,13 +64,13 @@ Before following the instructions below, **please read these important notes**:
 To set up QV2GPU for use in the QV2GPU rescoring proxy, run the following command:
 
 ```bash
-sh scripts/install_qv2gpu.sh <workspace_directory>
+sh external/install_qv2gpu.sh <workspace_directory>
 ```
 
-The default installation path points to `quickvina_dir`. To make this work with your Vina-GPU-2.1 installation path, you can create a symlink:
+The default installation path points to `Vina-GPU-2.1`. If you would like to modify this path, you can create a symlink:
 
 ```bash
-ln -s <your-Vina-GPU-2.1_installation_path> quickvina_dir
+ln -s <your-Vina-GPU-2.1_installation_path> Vina-GPU-2.1
 ```
 
 </details>
