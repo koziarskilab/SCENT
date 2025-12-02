@@ -14,7 +14,7 @@ cd "$WORKSPACE"
 
 # Install boost 1.83 from source
 BOOST_VER=1_83_0
-wget https://boostorg.jfrog.io/artifactory/main/release/1.83.0/source/boost_${BOOST_VER}.tar.gz
+wget https://archives.boost.io/release/1.83.0/source/boost_$BOOST_VER.tar.gz
 tar -zxvf boost_${BOOST_VER}.tar.gz
 cd boost_${BOOST_VER}
 ./bootstrap.sh --prefix=$WORKSPACE/boost
@@ -27,9 +27,12 @@ echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$WORKSPACE/boost/lib/" >> ~/.bash
 cd ..
 git clone https://github.com/DeltaGroupNJUPT/Vina-GPU-2.1.git
 
-# Compile all 3 versions and modify each Makefile to reflect the correct paths
+# Load correct cuda module if on HPC. Replace with available version (<12.0)
+module load cuda/11.7
+
 CUDA_PATH=$(dirname $(dirname $(which nvcc)))
 
+# Compile all 3 versions and modify each Makefile to reflect the correct paths
 cd Vina-GPU-2.1
 for dir in QuickVina2-GPU-2.1 QuickVina-W-GPU-2.1 AutoDock-Vina-GPU-2.1; do
     cd $dir
