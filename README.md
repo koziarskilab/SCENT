@@ -176,9 +176,9 @@ Under `rgfn.gfns`, the repository provides the implementation of the GFlowNets.
 
 ```text
 @inproceedings{gainski2025scalable,
-  title={Scalable and cost-efficient de novo template-based molecular generation},
-  author={Gai{\'n}ski, Piotr and Boussif, Oussama and Shevchuk, Dmytro and Rekesh, Andrei and Parviz, Ali and Tyers, Mike and Batey, Robert A and Koziarski, Micha{\l}},
-  booktitle={ICLR 2025 Workshop on Generative and Experimental Perspectives for Biomolecular Design},
+  title={Scalable and Cost-Efficient de Novo Template-Based Molecular Generation},
+  author={Gai{\'n}ski, Piotr and Boussif, Oussama and Rekesh, Andrei and Shevchuk, Dmytro and Parviz, Ali and Tyers, Mike and Batey, Robert A and Koziarski, Micha{\l}},
+  booktitle={The Thirty-ninth Annual Conference on Neural Information Processing Systems},
   year={2025}
 }
 ```
